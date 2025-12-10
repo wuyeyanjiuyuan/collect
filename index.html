@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>午夜研究院</title>
+  <title>Gesture应用-午夜研究院</title>
   <link rel="icon" href="images/icon.ico" sizes="16x16">
 
   <!-- 样式 -->
   <link rel="stylesheet" href="css/index.css">
-  <link rel="stylesheet" href="css/lunbo.css">
   <link rel="stylesheet" href="css/search-form.css">
+  <link rel="stylesheet" href="css/dropdown.css" />
   <link rel="stylesheet" href="./live2d/assets/waifu.css" />
   <!-- 不再需要 loading.css，如果里面有 .module {opacity:0} 就别引入了 -->
   <!-- <link rel="stylesheet" href="css/loading.css"> -->
@@ -35,10 +35,22 @@
     </div>
 
     <nav class="nav-links">
-      <a href="https://wuyeyanjiuyuan.github.io/pix2text" target="_blank">Gesture</a>
-      <a href="https://wuyeyanjiuyuan.github.io/collect" target="_blank">Collect</a>
-      <a href="https://www.cnki.net/" target="_blank">CNKI</a>
-    </nav>
+        
+        <div class="dropdown">
+          <a href="https://wuyeyanjiuyuan.github.io/pix2text" target="_blank">Gesture</a>
+
+          <a class="dropdown-trigger" href="https://wuyeyanjiuyuan.github.io/collect" target="_blank">Collect</a>
+          
+          <div class="dropdown-menu">
+            <a href="?app=material" id="menu-material">Material</a>
+            <a href="?app=movie" id="menu-movie">电影</a>
+            <a href="?app=cartoon" id="menu-cartoon">动漫</a>
+            <a href="?app=game" id="menu-drones">游戏</a>
+          </div>
+        </div>
+
+        <a href="https://www.cnki.net/" target="_blank">CNKI</a>
+      </nav>
   
 
   <!-- 右侧：搜索模块 -->
@@ -48,10 +60,17 @@
 
 <!-- 主题内容 -->
  <main id="main-container">
-  <section class="tool-card">
-    <h2 style="opacity:.4; text-align:center; padding:40px 0;">这里以后放子页面内容</h2>
-  </section>
-</main>
+    <section class="tool-card">
+      <div style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #eee;">
+        <h1 id="app-title" style="font-size: 24px; color: #333;">正在加载应用...</h1>
+        <p id="app-desc" style="color: #666; font-size: 14px; margin-top: 5px;">
+          午夜研究院
+        </p>
+      </div>
+
+      <div id="module-container" style="min-height: 500px;"></div>
+    </section>
+  </main>
 
 
   <!-- Live2D 模块（内容里有 waifu，依旧固定在右下角） -->
@@ -68,19 +87,62 @@
   <!-- 模块加载逻辑（无动画） -->
   <script>
     $(function(){
-      // 如果 modules 放在 /modules/ 目录下就用下面这版路径
-      const modules = {
-        "#module-search":   "./modules/search.html",
-        "#module-live2d":   "./modules/live2d.html",
-        "#module-effects":  "./modules/effects.html"
+      // 1. 加载公共模块
+      $("#module-search").load("./modules/search.html");
+      $("#module-live2d").load("./modules/live2d.html");
+      $("#module-effects").load("./modules/effects.html");
+
+      // 2. ★★★ 核心路由逻辑 ★★★
+      // 获取 URL 中的 ?app=xxx 参数
+      const urlParams = new URLSearchParams(window.location.search);
+      const appName = urlParams.get('app') || 'sun'; // 默认加载 sun
+
+      // 应用配置表 (以后加新功能就在这里加一行)
+      const appConfig = {
+        'material': {
+          title: "材料百科",
+          desc: "什么时候能搞明白啊",
+          file: "./modules/material.html"
+        },
+        'movie': {
+          title: "电影",
+          desc: "收集电影",
+          file: "./modules/movie.html" // 你可以建一个空的 html 文件测试
+        },
+        'cartoon': {
+          title: "动漫",
+          desc: "我们所过得看似平凡的日常，其实是连续不断发生的奇迹",
+          file: "./modules/cartoon.html"
+        },
+        'game': {
+          title: "游戏",
+          desc: "NO GAME NO LIFE",
+          file: "./modules/game.html"
+        }
       };
 
-      for (let id in modules) {
-        $(id).load(modules[id], function(response, status, xhr){
+      const currentApp = appConfig[appName];
+
+      if (currentApp) {
+        // 更新标题和描述
+        $("#app-title").text(currentApp.title);
+        $("#app-desc").text(currentApp.desc);
+        
+        // 加载模块
+        $("#module-container").load(currentApp.file, function(response, status, xhr){
           if (status === "error") {
-            console.error("模块加载失败：", id, modules[id], xhr.status, xhr.statusText);
+            $("#module-container").html(`
+              <div style="text-align:center; padding:50px; color:#999;">
+                <h3>🚧 404 Not Found</h3>
+                <p>找不到模块文件: ${currentApp.file}</p>
+                <p>请确保文件已上传到 modules 文件夹</p>
+              </div>
+            `);
           }
         });
+      } else {
+        $("#app-title").text("未知应用");
+        $("#module-container").html("<p style='text-align:center; padding:50px;'>参数错误，请从菜单选择应用</p>");
       }
     });
   </script>
