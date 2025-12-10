@@ -210,14 +210,14 @@
                 // 1. 读取本地数据文件
                 // 注意：请确保你上传了 elements.json 到 ../data/ 目录
                 // 如果本地调试跨域报错，请使用 live-server 或 python -m http.server
-                const response = await fetch('data/PeriodicTableJSON.json'); 
+                const response = await fetch('data/elements.json'); 
                 // 为了演示，如果fetch失败(比如你还没传文件)，我先做一个假数据 fallback
                 if(!response.ok) throw new Error("Data file not found");
                 this.data = await response.json();
                 
                 this.renderTable();
             } catch (e) {
-                console.error("加载数据失败，请检查路径 ../data/PeriodicTableJSON.json", e);
+                console.error("加载数据失败，请检查路径 ../data/elements.json", e);
                 document.getElementById('pt-grid').innerHTML = `<p style="color:red; grid-column:1/-1">错误: 无法加载数据文件 (${e.message})。<br>请确保 'elements.json' 已上传至 'data' 文件夹。</p>`;
             }
         },
