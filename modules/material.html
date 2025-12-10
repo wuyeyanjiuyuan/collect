@@ -153,7 +153,7 @@
 
 </style>
 
-<script src="https://3Dmol.csb.pitt.edu/build/3Dmol-min.js"></script>
+<script src="js/3Dmol-min.js"></script>
 <div id="material-app">
     <div class="pt-container">
         <h3 style="margin: 0 0 10px 20px; color:#555;">Periodic Table of Elements <span style="font-size:12px; font-weight:normal; color:#999;">Select an element to load CIF structure</span></h3>
@@ -210,7 +210,7 @@
                 // 1. 读取本地数据文件
                 // 注意：请确保你上传了 elements.json 到 ../data/ 目录
                 // 如果本地调试跨域报错，请使用 live-server 或 python -m http.server
-                const response = await fetch('../data/elements.json'); 
+                const response = await fetch('data/elements.json'); 
                 // 为了演示，如果fetch失败(比如你还没传文件)，我先做一个假数据 fallback
                 if(!response.ok) throw new Error("Data file not found");
                 this.data = await response.json();
@@ -299,7 +299,7 @@
             this.viewer.clear();
 
             // 构建文件路径: ../data/structures/26.cif
-            const cifUrl = `../data/structures/${atomicNumber}.cif`;
+            const cifUrl = `data/structures/${atomicNumber}.cif`;
 
             // fetch CIF 文件
             fetch(cifUrl)
