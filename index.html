@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>午夜研究院</title>
+  <link rel="icon" href="images/icon.ico" sizes="16x16">
+
+  <!-- 样式 -->
+  <link rel="stylesheet" href="css/index.css">
+  <link rel="stylesheet" href="css/lunbo.css">
+  <link rel="stylesheet" href="css/search-form.css">
+  <link rel="stylesheet" href="./live2d/assets/waifu.css" />
+  <!-- 不再需要 loading.css，如果里面有 .module {opacity:0} 就别引入了 -->
+  <!-- <link rel="stylesheet" href="css/loading.css"> -->
+
+  <!-- jQuery -->
+  <script src="live2d/assets/jquery.min.js"></script>
+  <script src="live2d/assets/jquery-ui.min.js"></script>
+
+  <!-- 禁止转码 -->
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+</head>
+
+<body>
+  <!-- 顶部导航 -->
+  <header class="navbar">
+  <!-- 左侧：logo + 导航 -->
+  <div class="navbar-main">
+    <div class="logo">
+      <a href="https://wuyeyanjiuyuan.github.io/">
+        <img src="images/logo.png" alt="午夜研究院 Logo">
+      </a>
+    </div>
+
+    <nav class="nav-links">
+      <a href="https://wuyeyanjiuyuan.github.io/pix2text" target="_blank">Gesture</a>
+      <a href="https://wuyeyanjiuyuan.github.io/collect" target="_blank">Collect</a>
+      <a href="https://www.cnki.net/" target="_blank">CNKI</a>
+    </nav>
+  
+
+  <!-- 右侧：搜索模块 -->
+  <div id="module-search"></div>
+  </div>
+</header>
+
+<!-- 主题内容 -->
+ <main id="main-container">
+  <section class="tool-card">
+    <h2 style="opacity:.4; text-align:center; padding:40px 0;">这里以后放子页面内容</h2>
+  </section>
+</main>
+
+
+  <!-- Live2D 模块（内容里有 waifu，依旧固定在右下角） -->
+  <div id="module-live2d"></div>
+
+  <!-- 其它 JS 特效（点击飘字等），只包含 <script> 的模块 -->
+  <div id="module-effects"></div>
+
+  <!-- 页脚 -->
+  <footer class="footer">
+    <p>Copyright &copy; 2025 午夜研究院 | 保留所有权利</p>
+  </footer>
+
+  <!-- 模块加载逻辑（无动画） -->
+  <script>
+    $(function(){
+      // 如果 modules 放在 /modules/ 目录下就用下面这版路径
+      const modules = {
+        "#module-search":   "./modules/search.html",
+        "#module-live2d":   "./modules/live2d.html",
+        "#module-effects":  "./modules/effects.html"
+      };
+
+      for (let id in modules) {
+        $(id).load(modules[id], function(response, status, xhr){
+          if (status === "error") {
+            console.error("模块加载失败：", id, modules[id], xhr.status, xhr.statusText);
+          }
+        });
+      }
+    });
+  </script>
+</body>
+</html>

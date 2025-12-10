@@ -1,1 +1,1 @@
-# collect
+# pix2text
