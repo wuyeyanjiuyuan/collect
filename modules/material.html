@@ -5,8 +5,8 @@
         --text-primary: #2c3e50;
         --accent-color: #2980b9;
         --border-color: #dfe6e9;
-        --gray-text: #7f8c8d;
-        --math-font: "Times New Roman", serif;
+        --gray-text: #666;
+        --viewer-bg: #e6e6e6; /* 3D背景改为工业灰 */
     }
 
     #material-app {
@@ -16,9 +16,9 @@
         display: flex; flex-direction: column; padding-bottom: 50px;
     }
 
-    /* === 顶部 & 周期表 (不变) === */
-    .control-bar { padding: 10px 15px; background: #f8f9fa; border-bottom: 1px solid var(--border-color); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-    .mode-btn { padding: 5px 12px; font-size: 13px; border: 1px solid #ccc; background: #fff; border-radius: 4px; cursor: pointer; transition: 0.2s; }
+    /* === 顶部 & 周期表 === */
+    .control-bar { padding: 8px 15px; background: #f8f9fa; border-bottom: 1px solid var(--border-color); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .mode-btn { padding: 4px 10px; font-size: 12px; border: 1px solid #ccc; background: #fff; border-radius: 4px; cursor: pointer; transition: 0.2s; }
     .mode-btn:hover { background: #eee; } .mode-btn.active { background: var(--text-primary); color: white; border-color: var(--text-primary); }
     
     .pt-container { padding: 10px; width: 100%; box-sizing: border-box; display: flex; justify-content: center; }
@@ -38,51 +38,59 @@
     }
     @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* 左侧面板 */
+    /* 左侧面板：高度固定，内容自适应 */
     .info-column { 
-        flex: 1 1 380px; 
+        flex: 1 1 400px; /* 宽度给足 */
         background: #fff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); 
-        display: flex; flex-direction: column; height: 580px; 
+        display: flex; flex-direction: column; 
+        height: 600px; /* 固定高度，防止页面抖动 */
     }
 
-    .info-header { padding: 20px 20px 0 20px; flex-shrink: 0; }
-    .header-top { display: flex; justify-content: space-between; border-bottom: 2px solid var(--accent-color); padding-bottom: 5px; margin-bottom: 10px;}
+    .info-header { padding: 15px 20px 0 20px; flex-shrink: 0; }
+    .header-top { display: flex; justify-content: space-between; border-bottom: 2px solid var(--accent-color); padding-bottom: 5px; margin-bottom: 5px;}
     
-    .info-tabs { display: flex; background: #f1f3f5; border-bottom: 1px solid #ddd; margin-top: 10px; flex-shrink: 0; overflow-x: auto;}
-    .tab-btn { flex: 1; min-width: 80px; padding: 10px 0; text-align: center; cursor: pointer; font-size: 12px; font-weight: 600; color: #7f8c8d; border-bottom: 3px solid transparent; transition: all 0.2s; white-space: nowrap;}
+    .info-tabs { display: flex; background: #f1f3f5; border-bottom: 1px solid #ddd; margin-top: 5px; flex-shrink: 0; overflow-x: auto;}
+    .tab-btn { flex: 1; min-width: 60px; padding: 8px 0; text-align: center; cursor: pointer; font-size: 12px; font-weight: 600; color: #7f8c8d; border-bottom: 3px solid transparent; transition: all 0.2s; white-space: nowrap;}
     .tab-btn:hover { background: #e9ecef; color: var(--accent-color); }
     .tab-btn.active { background: #fff; color: var(--accent-color); border-bottom-color: var(--accent-color); }
 
-    .tab-content { padding: 20px; flex: 1; overflow-y: auto; }
+    /* 内容滚动区 */
+    .tab-content { padding: 15px 20px; flex: 1; overflow-y: auto; }
     .tab-pane { display: none; } .tab-pane.active { display: block; }
 
-    /* 表格与公式 */
-    .prop-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 15px; }
-    .prop-table td { padding: 8px 0; border-bottom: 1px solid #eee; vertical-align: middle; }
-    .bilingual-label { display: flex; flex-direction: column; line-height: 1.2; }
-    .label-cn { font-weight: bold; font-size: 13px; color: #555; }
-    .label-en { font-size: 11px; color: #aaa; text-transform: uppercase; }
-    .prop-table .value { color: #333; font-weight: 600; text-align: right; font-family: Consolas, monospace; }
+    /* 表格优化：紧凑型 */
+    .prop-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 10px; }
+    .prop-table td { padding: 6px 0; border-bottom: 1px solid #eee; vertical-align: middle; }
+    .bilingual-label { display: flex; flex-direction: column; line-height: 1.1; }
+    .label-cn { font-weight: bold; font-size: 12px; color: #444; }
+    .label-en { font-size: 10px; color: #999; text-transform: uppercase; }
+    .prop-table .value { color: #222; font-weight: 600; text-align: right; font-family: Consolas, monospace; max-width: 180px; word-wrap: break-word;}
 
-    .section-title { font-size: 12px; color: var(--accent-color); margin: 15px 0 5px 0; font-weight: bold; border-bottom: 1px dashed #eee; padding-bottom: 3px; display:flex; justify-content: space-between;}
+    /* 简介文本优化：防止溢出 */
+    .summary-text { 
+        font-size: 12px; line-height: 1.5; color: #555; 
+        margin-bottom: 10px; padding: 8px; background: #f8f9fa; border-radius: 4px; 
+        border-left: 3px solid var(--accent-color);
+        max-height: 80px; overflow-y: auto; /* 核心：太长就滚动 */
+    }
 
-    /* 公式卡片 */
-    .formula-card { background: #fdfdfd; border: 1px solid #eee; padding: 10px; border-radius: 4px; margin-bottom: 10px; }
-    .formula-title { font-size: 11px; font-weight: bold; color: #888; margin-bottom: 5px; }
-    .formula-math { font-family: var(--math-font); font-size: 14px; font-style: italic; text-align: center; color: #444; }
-
-    /* Bohr */
-    #bohr-container { width: 100%; height: 160px; display: flex; justify-content: center; margin-bottom: 10px; flex-shrink: 0;}
+    /* Bohr 模型：缩小高度 */
+    #bohr-container { width: 100%; height: 120px; display: flex; justify-content: center; margin-bottom: 5px; flex-shrink: 0;}
     #bohr-svg { width: 100%; height: 100%; overflow: visible; }
     .electron-shell { fill: none; stroke: #dfe6e9; stroke-width: 1; } .electron-dot { fill: var(--accent-color); } .nucleus { fill: var(--text-primary); }
 
-    /* 右侧 3D */
+    /* 右侧 3D：背景色修改 */
     .viewer-column { flex: 1 1 450px; display: flex; flex-direction: column; gap: 10px; }
-    .viewer-box { width: 100%; height: 540px; background: #000; border-radius: 8px; overflow: hidden; position: relative; border: 1px solid #333; }
+    .viewer-box { 
+        width: 100%; height: 560px; /* 和左侧差不多高 */
+        background: var(--viewer-bg); /* 改为灰色 */
+        border-radius: 8px; overflow: hidden; position: relative; border: 1px solid #ccc; 
+    }
     #mol-canvas { width: 100%; height: 100%; }
-    .status-overlay { position: absolute; top:0; left:0; width:100%; height:100%; display: flex; justify-content: center; align-items: center; flex-direction: column; background: rgba(0,0,0,0.8); color: #ccc; font-size: 13px; text-align: center; z-index: 10; pointer-events: none; }
+    .status-overlay { position: absolute; top:0; left:0; width:100%; height:100%; display: flex; justify-content: center; align-items: center; flex-direction: column; background: rgba(0,0,0,0.5); color: #fff; font-size: 13px; text-align: center; z-index: 10; pointer-events: none; }
+    
     .structure-selector { display:flex; gap:8px; flex-wrap:wrap; min-height: 30px;} 
-    .variant-btn { padding: 4px 12px; border-radius:15px; border:1px solid #ccc; background:#fff; cursor:pointer; font-size:12px; transition:0.2s;} 
+    .variant-btn { padding: 4px 12px; border-radius:15px; border:1px solid #999; background:#fff; cursor:pointer; font-size:12px; transition:0.2s;} 
     .variant-btn:hover { border-color: var(--accent-color); color: var(--accent-color); } 
     .variant-btn.active { background:var(--accent-color); color:white; border-color:var(--accent-color); }
 </style>
@@ -116,78 +124,84 @@
             </div>
 
             <div class="info-tabs">
-                <div class="tab-btn active" onclick="app.switchTab('overview')">概览<br>Overview</div>
+                <div class="tab-btn active" onclick="app.switchTab('overview')">概览<br>General</div>
                 <div class="tab-btn" onclick="app.switchTab('physical')">物理<br>Physical</div>
                 <div class="tab-btn" onclick="app.switchTab('atomic')">原子<br>Atomic</div>
-                <div class="tab-btn" onclick="app.switchTab('implant')">⚡ 离子注入<br>Implantation</div>
+                <div class="tab-btn" onclick="app.switchTab('history')">历史<br>History</div>
+                <div class="tab-btn" onclick="app.switchTab('implant')">⚡注入<br>Ion Imp.</div>
             </div>
 
             <div class="tab-content">
                 <div id="tab-overview" class="tab-pane active">
                     <div id="bohr-container"><svg id="bohr-svg" viewBox="-100 -100 200 200"></svg></div>
-                    <div id="inf-summary" style="font-size:12px; color:#666; margin-bottom:10px; line-height:1.4; max-height:60px; overflow:hidden;"></div>
+                    <div id="inf-summary" class="summary-text"></div>
+                    
                     <table class="prop-table">
+                        <tr><td class="label"><div class="bilingual-label"><span class="label-cn">外观</span><span class="label-en">Appearance</span></div></td><td class="value" id="inf-appearance"></td></tr>
                         <tr><td class="label"><div class="bilingual-label"><span class="label-cn">类别</span><span class="label-en">Category</span></div></td><td class="value" id="inf-category"></td></tr>
-                        <tr><td class="label"><div class="bilingual-label"><span class="label-cn">电子排布</span><span class="label-en">Config</span></div></td><td class="value" id="inf-config" style="font-size:11px;"></td></tr>
+                        <tr><td class="label"><div class="bilingual-label"><span class="label-cn">物态 (STP)</span><span class="label-en">Phase</span></div></td><td class="value" id="inf-phase"></td></tr>
+                        <tr>
+                            <td class="label"><div class="bilingual-label"><span class="label-cn">位置</span><span class="label-en">Position</span></div></td>
+                            <td class="value" style="font-size:11px;">
+                                Period <span id="inf-period"></span>, Group <span id="inf-group"></span>, Block <span id="inf-block"></span>
+                            </td>
+                        </tr>
                     </table>
                 </div>
 
                 <div id="tab-physical" class="tab-pane">
                     <table class="prop-table">
-                        <tr><td class="label"><div class="bilingual-label"><span class="label-cn">原子量</span><span class="label-en">Mass</span></div></td><td class="value" id="inf-mass"></td></tr>
+                        <tr><td class="label"><div class="bilingual-label"><span class="label-cn">原子量</span><span class="label-en">Atomic Mass</span></div></td><td class="value" id="inf-mass"></td></tr>
                         <tr><td class="label"><div class="bilingual-label"><span class="label-cn">密度</span><span class="label-en">Density</span></div></td><td class="value" id="inf-density"></td></tr>
-                        <tr><td class="label"><div class="bilingual-label"><span class="label-cn">熔点</span><span class="label-en">Melting</span></div></td><td class="value" id="inf-melt"></td></tr>
-                        <tr><td class="label"><div class="bilingual-label"><span class="label-cn">摩尔比热</span><span class="label-en">Molar Heat</span></div></td><td class="value" id="inf-heat"></td></tr>
+                        <tr><td class="label"><div class="bilingual-label"><span class="label-cn">熔点</span><span class="label-en">Melting Point</span></div></td><td class="value" id="inf-melt"></td></tr>
+                        <tr><td class="label"><div class="bilingual-label"><span class="label-cn">沸点</span><span class="label-en">Boiling Point</span></div></td><td class="value" id="inf-boil"></td></tr>
+                        <tr><td class="label"><div class="bilingual-label"><span class="label-cn">摩尔热容</span><span class="label-en">Molar Heat</span></div></td><td class="value" id="inf-heat"></td></tr>
                     </table>
                 </div>
 
                 <div id="tab-atomic" class="tab-pane">
                     <table class="prop-table">
+                        <tr><td class="label"><div class="bilingual-label"><span class="label-cn">电子排布</span><span class="label-en">Configuration</span></div></td><td class="value" id="inf-config" style="font-size:11px;"></td></tr>
                         <tr><td class="label"><div class="bilingual-label"><span class="label-cn">电子层</span><span class="label-en">Shells</span></div></td><td class="value" id="inf-shells"></td></tr>
                         <tr><td class="label"><div class="bilingual-label"><span class="label-cn">电负性</span><span class="label-en">Electronegativity</span></div></td><td class="value" id="inf-neg"></td></tr>
+                        <tr><td class="label"><div class="bilingual-label"><span class="label-cn">电子亲和能</span><span class="label-en">Electron Affinity</span></div></td><td class="value" id="inf-affinity"></td></tr>
+                        <tr>
+                            <td class="label" colspan="2">
+                                <div class="bilingual-label" style="margin-bottom:5px;"><span class="label-cn">电离能</span><span class="label-en">Ionization Energies (kJ/mol)</span></div>
+                                <div id="inf-ionization" style="font-family:Consolas; font-size:10px; color:#555; background:#eee; padding:5px; border-radius:4px; word-break:break-all;"></div>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div id="tab-history" class="tab-pane">
+                    <table class="prop-table">
+                        <tr><td class="label"><div class="bilingual-label"><span class="label-cn">发现者</span><span class="label-en">Discovered By</span></div></td><td class="value" id="inf-discovered"></td></tr>
+                        <tr><td class="label"><div class="bilingual-label"><span class="label-cn">命名者</span><span class="label-en">Named By</span></div></td><td class="value" id="inf-named"></td></tr>
+                        <tr>
+                            <td class="label"><div class="bilingual-label"><span class="label-cn">维基百科</span><span class="label-en">Source</span></div></td>
+                            <td class="value"><a id="inf-source" href="#" target="_blank" style="color:var(--accent-color); text-decoration:none;">Wikipedia ↗</a></td>
+                        </tr>
                     </table>
                 </div>
 
                 <div id="tab-implant" class="tab-pane">
-                    <div class="section-title"><span>靶材固有属性</span><span>Intrinsic Properties</span></div>
+                    <div style="background:#eaf2f8; padding:8px; border-radius:4px; font-size:11px; color:#555; margin-bottom:10px; border-left:3px solid var(--accent-color);">
+                        <i class="fa fa-info-circle"></i> <b>Ref:</b> 100keV Self-Ion (SRIM Estimate)
+                    </div>
                     <table class="prop-table">
-                        <tr>
-                            <td class="label"><div class="bilingual-label"><span class="label-cn">原子密度</span><span class="label-en">Atomic Density (N)</span></div></td>
-                            <td class="value" id="imp-density"></td>
-                        </tr>
-                        <tr>
-                            <td class="label"><div class="bilingual-label"><span class="label-cn">移位阈能</span><span class="label-en">Displacement Energy (E<sub>d</sub>)</span></div></td>
-                            <td class="value" id="imp-ed"></td>
-                        </tr>
-                        <tr>
-                            <td class="label"><div class="bilingual-label"><span class="label-cn">表面结合能</span><span class="label-en">Surface Binding (E<sub>s</sub>)</span></div></td>
-                            <td class="value" id="imp-es"></td>
-                        </tr>
-                        <tr>
-                            <td class="label"><div class="bilingual-label"><span class="label-cn">晶格结合能</span><span class="label-en">Lattice Binding (E<sub>b</sub>)</span></div></td>
-                            <td class="value" id="imp-lattice"></td>
-                        </tr>
+                        <tr><td class="label"><div class="bilingual-label"><span class="label-cn">原子密度 (Calc)</span><span class="label-en">Atomic Density</span></div></td><td class="value" id="imp-density"></td></tr>
+                        <tr><td class="label"><div class="bilingual-label"><span class="label-cn">移位阈能</span><span class="label-en">Disp. Energy (E<sub>d</sub>)</span></div></td><td class="value" id="imp-ed"></td></tr>
+                        <tr><td class="label"><div class="bilingual-label"><span class="label-cn">表面结合能</span><span class="label-en">Surf. Binding (E<sub>s</sub>)</span></div></td><td class="value" id="imp-es"></td></tr>
+                        <tr><td class="label"><div class="bilingual-label"><span class="label-cn">晶格结合能</span><span class="label-en">Lattice Bind. (E<sub>b</sub>)</span></div></td><td class="value" id="imp-lattice"></td></tr>
                     </table>
-
-                    <div class="section-title"><span>相关计算公式</span><span>Governing Equations</span></div>
                     
-                    <div class="formula-card">
-                        <div class="formula-title">Projected Range (LSS Theory)</div>
-                        <div class="formula-math">R<sub>p</sub> = &int; E dE / (S<sub>n</sub>(E) + S<sub>e</sub>(E))</div>
+                    <div class="section-title"><span>公式参考</span><span>Formulas</span></div>
+                    <div style="font-family: 'Times New Roman', serif; font-size:13px; text-align:center; color:#444; background:#fff; border:1px solid #eee; padding:5px; margin-bottom:5px;">
+                        R<sub>p</sub> &asymp; E / (S<sub>n</sub> + S<sub>e</sub>)
                     </div>
-
-                    <div class="formula-card">
-                        <div class="formula-title">Nuclear Stopping Power</div>
-                        <div class="formula-math">S<sub>n</sub>(E) &propto; Z<sub>1</sub> Z<sub>2</sub> / (M<sub>1</sub> + M<sub>2</sub>)</div>
-                    </div>
-
-                    <div class="formula-card">
-                        <div class="formula-title">Sputter Yield (Sigmund)</div>
-                        <div class="formula-math">Y(E) &propto; S<sub>n</sub>(E) / U<sub>0</sub></div>
-                    </div>
-                    
-                    <div style="font-size:10px; color:#999; margin-top:10px;">
-                        * Dynamic values (Range, Straggle, Yield) depend on incident ion species and energy. Use SRIM/TRIM for simulation.
+                    <div style="font-family: 'Times New Roman', serif; font-size:13px; text-align:center; color:#444; background:#fff; border:1px solid #eee; padding:5px;">
+                        Y &propto; S<sub>n</sub>(E) / U<sub>0</sub>
                     </div>
                 </div>
             </div>
@@ -208,7 +222,7 @@
 
 <script>
 (function(){
-    // 中文映射 (同前)
+    // 中文映射 (保持不变)
     const cnMap = { "Hydrogen":"氢","Helium":"氦","Lithium":"锂","Beryllium":"铍","Boron":"硼","Carbon":"碳","Nitrogen":"氮","Oxygen":"氧","Fluorine":"氟","Neon":"氖","Sodium":"钠","Magnesium":"镁","Aluminium":"铝","Silicon":"硅","Phosphorus":"磷","Sulfur":"硫","Chlorine":"氯","Argon":"氩","Potassium":"钾","Calcium":"钙","Scandium":"钪","Titanium":"钛","Vanadium":"钒","Chromium":"铬","Manganese":"锰","Iron":"铁","Cobalt":"钴","Nickel":"镍","Copper":"铜","Zinc":"锌","Gallium":"镓","Germanium":"锗","Arsenic":"砷","Selenium":"硒","Bromine":"溴","Krypton":"氪","Rubidium":"铷","Strontium":"锶","Yttrium":"钇","Zirconium":"锆","Niobium":"铌","Molybdenum":"钼","Technetium":"锝","Ruthenium":"钌","Rhodium":"铑","Palladium":"钯","Silver":"银","Cadmium":"镉","Indium":"铟","Tin":"锡","Antimony":"锑","Tellurium":"碲","Iodine":"碘","Xenon":"氙","Cesium":"铯","Barium":"钡","Lanthanum":"镧","Cerium":"铈","Praseodymium":"镨","Neodymium":"钕","Promethium":"钷","Samarium":"钐","Europium":"铕","Gadolinium":"钆","Terbium":"铽","Dysprosium":"镝","Holmium":"钬","Erbium":"铒","Thulium":"铥","Ytterbium":"镱","Lutetium":"镥","Hafnium":"铪","Tantalum":"钽","Tungsten":"钨","Rhenium":"铼","Osmium":"锇","Iridium":"铱","Platinum":"铂","Gold":"金","Mercury":"汞","Thallium":"铊","Lead":"铅","Bismuth":"铋","Polonium":"钋","Astatine":"砹","Radon":"氡","Francium":"钫","Radium":"镭","Actinium":"锕","Thorium":"钍","Protactinium":"镤","Uranium":"铀","Neptunium":"镎","Plutonium":"钚","Americium":"镅","Curium":"锔","Berkelium":"锫","Californium":"锎","Einsteinium":"锿","Fermium":"镄","Mendelevium":"钔","Nobelium":"锘","Lawrencium":"铹","Rutherfordium":"鈩","Dubnium":"𨧀","Seaborgium":"𨭎","Bohrium":"𨨏","Hassium":"𨭆","Meitnerium":"䥑","Darmstadtium":"鐽","Roentgenium":"錀","Copernicium":"鎶","Nihonium":"鉨","Flerovium":"鈇","Moscovium":"镆","Livermorium":"鉝","Tennessine":"Ts","Oganesson":"Og" };
 
     const ResearchApp = {
@@ -216,19 +230,15 @@
 
         init: async function() {
             try {
-                // ★★★ 核心修改：同时加载三个文件 ★★★
                 const [elRes, structRes, impRes] = await Promise.all([
                     fetch('data/elements.json'),
                     fetch('data/structures.json').catch(()=>({ok:false})),
-                    fetch('data/implantation.json').catch(()=>({ok:false})) // 加载新文件
+                    fetch('data/implantation.json').catch(()=>({ok:false}))
                 ]);
-                
                 if(!elRes.ok) throw new Error("Load elements.json failed");
                 this.elements = await elRes.json();
-                
                 if(structRes.ok) this.structures = await structRes.json();
-                if(impRes.ok) this.implantData = await impRes.json(); // 存入内存
-
+                if(impRes.ok) this.implantData = await impRes.json(); 
                 this.buildGridDOM();
             } catch (e) {
                 console.error(e);
@@ -300,45 +310,57 @@
             document.getElementById('inf-cn-name').innerText = cnMap[el.name] || el.name; 
             document.getElementById('inf-num').innerText = el.number; 
 
+            // 2. Overview Tab
             this.drawBohr(el);
-
-            // 2. Overview
             document.getElementById('inf-summary').innerText = el.summary || "No description.";
+            document.getElementById('inf-appearance').innerText = el.appearance || "N/A";
             document.getElementById('inf-category').innerText = el.category ? el.category.toUpperCase() : "N/A";
-            const fmt = (el.electron_configuration || "").replace(/(\d+)([spdf])/g, '$1 $2').replace(/([spdf])(\d+)/g, '$1<sup>$2</sup>');
-            document.getElementById('inf-config').innerHTML = fmt;
+            document.getElementById('inf-phase').innerText = el.phase || "N/A";
+            
+            // Period / Group / Block (New!)
+            document.getElementById('inf-period').innerText = el.period || "-";
+            document.getElementById('inf-group').innerText = el.group || "-";
+            document.getElementById('inf-block').innerText = el.block ? el.block.toUpperCase() : "-";
 
-            // 3. Physical
+            // 3. Physical Tab
             document.getElementById('inf-mass').innerText = el.atomic_mass;
             document.getElementById('inf-density').innerText = el.density ? el.density + " g/cm³" : "N/A";
             document.getElementById('inf-melt').innerText = el.melt ? el.melt + " K" : "N/A";
+            document.getElementById('inf-boil').innerText = el.boil ? el.boil + " K" : "N/A";
             document.getElementById('inf-heat').innerText = el.molar_heat ? el.molar_heat + " J/(mol·K)" : "N/A";
 
-            // 4. Atomic
+            // 4. Atomic Tab
+            const fmt = (el.electron_configuration || "").replace(/(\d+)([spdf])/g, '$1 $2').replace(/([spdf])(\d+)/g, '$1<sup>$2</sup>');
+            document.getElementById('inf-config').innerHTML = fmt;
             document.getElementById('inf-shells').innerText = el.shells ? el.shells.join(', ') : "N/A";
             document.getElementById('inf-neg').innerText = el.electronegativity_pauling || "N/A";
+            document.getElementById('inf-affinity').innerText = el.electron_affinity ? el.electron_affinity + " kJ/mol" : "N/A";
+            document.getElementById('inf-ionization').innerText = el.ionization_energies ? el.ionization_energies.join(', ') : "N/A";
 
-            // 5. Implantation Data (从新文件读取)
+            // 5. History Tab
+            document.getElementById('inf-discovered').innerText = el.discovered_by || "Unknown";
+            document.getElementById('inf-named').innerText = el.named_by || "N/A";
+            const srcLink = document.getElementById('inf-source');
+            if(el.source) { srcLink.href = el.source; srcLink.style.display = "inline"; } else { srcLink.style.display = "none"; }
+
+            // 6. Implant
             this.loadImplantData(el);
 
             this.setupStructure(el);
-            this.switchTab('overview');
+            // 保持当前tab，如果第一次加载则默认 overview
+            if(!document.querySelector('.tab-pane.active')) this.switchTab('overview');
         },
 
         loadImplantData: function(el) {
-            // 从 implantation.json 查找数据
             const data = this.implantData[el.number] || {};
-            
-            // 原子密度 (优先计算，因为这是物理定律)
+            // 密度计算
             if(el.density && el.atomic_mass) {
                 const ad = (el.density * 6.022e23) / el.atomic_mass;
                 document.getElementById('imp-density').innerText = (ad/1e22).toFixed(3) + "e22 cm⁻³";
             } else {
                 document.getElementById('imp-density').innerText = "N/A";
             }
-
-            // 固有属性 (从文件读)
-            document.getElementById('imp-ed').innerHTML = data.ed ? `${data.ed} eV` : "15-25 eV (Est)";
+            document.getElementById('imp-ed').innerHTML = data.ed ? `${data.ed} eV` : "N/A";
             document.getElementById('imp-es').innerHTML = data.es ? `${data.es} eV` : "N/A";
             document.getElementById('imp-lattice').innerHTML = data.lattice_be ? `${data.lattice_be} eV` : "N/A";
         },
@@ -375,17 +397,19 @@
 
         loadCif: function(file) {
             const status = document.getElementById('viewer-status');
-            status.style.display = 'flex'; status.innerHTML = `<span style="color:#888">Downloading Structure...</span>`;
-            try {
-                if(typeof $3Dmol === 'undefined') throw new Error("3Dmol Library Missing");
-                if(!this.viewer) this.viewer = $3Dmol.createViewer("mol-canvas", { backgroundColor: "#000" });
-            } catch (err) { status.innerHTML = `<span style="color:red">SYSTEM ERROR</span><br>${err.message}`; return; }
+            status.style.display = 'flex'; status.innerHTML = `<span style="color:#888">Loading...</span>`;
+            
+            // ★★★ 背景色改为灰色 (0xe6e6e6) ★★★
+            if(!this.viewer) this.viewer = $3Dmol.createViewer("mol-canvas", { backgroundColor: "#e6e6e6" });
+            
             const path = `data/structures/${file}`;
             fetch(path).then(r => { if(!r.ok) throw new Error(`HTTP ${r.status}`); return r.text(); })
                 .then(cif => {
-                    if(cif.length < 50 || cif.includes("<html")) throw new Error("Invalid/Empty CIF File");
-                    this.viewer.clear(); const m = this.viewer.addModel(cif, "cif");
-                    this.viewer.addUnitCell(m, {boxAxes:true, color:'white', opacity:0.3});
+                    if(cif.length < 50 || cif.includes("<html")) throw new Error("Invalid CIF");
+                    this.viewer.clear(); 
+                    const m = this.viewer.addModel(cif, "cif");
+                    // 灰色背景下，晶胞框改为黑色或深灰
+                    this.viewer.addUnitCell(m, {boxAxes:true, color:'black', opacity:0.5});
                     this.viewer.setStyle({}, {sphere:{scale:0.3}, stick:{radius:0.1}});
                     this.viewer.replicateUnitCell(2,2,2, m);
                     this.viewer.zoomTo(); this.viewer.render();
@@ -393,7 +417,7 @@
                 })
                 .catch(e => { 
                     this.viewer.clear(); this.viewer.render();
-                    status.innerHTML = `<span style="color:red">LOAD FAILED</span><br><small>${path}</small>`; status.style.display = 'flex'; 
+                    status.innerHTML = `<span style="color:red">LOAD FAILED</span>`; status.style.display = 'flex'; 
                 });
         },
         resetCam: function() { if(this.viewer) this.viewer.zoomTo(); },
