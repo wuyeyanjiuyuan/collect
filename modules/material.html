@@ -1,147 +1,101 @@
 <!DOCTYPE html>
 <style>
-    /* === 全局变量 === */
     :root {
         --bg-color: #ffffff;
         --text-primary: #2c3e50;
         --accent-color: #2980b9;
         --border-color: #dfe6e9;
-        --tab-active-bg: #eaf2f8;
+        --gray-text: #7f8c8d;
     }
 
     #material-app {
-        font-family: 'Segoe UI', 'Roboto', Helvetica, Arial, sans-serif;
+        font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif; /* 加上微软雅黑 */
         background: var(--bg-color);
         color: var(--text-primary);
-        display: flex;
-        flex-direction: column;
-        padding-bottom: 50px;
+        display: flex; flex-direction: column; padding-bottom: 50px;
     }
 
-    /* === 顶部控制栏 === */
-    .control-bar {
-        padding: 10px 15px;
-        background: #f8f9fa;
-        border-bottom: 1px solid var(--border-color);
-        display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
-    }
-    .mode-btn {
-        padding: 5px 12px; font-size: 13px; border: 1px solid #ccc; background: #fff; border-radius: 4px; cursor: pointer; transition: 0.2s;
-    }
-    .mode-btn:hover { background: #eee; }
-    .mode-btn.active { background: var(--text-primary); color: white; border-color: var(--text-primary); }
-
-    /* === 周期表 === */
+    /* === 控制栏 & 周期表 (保持不变) === */
+    .control-bar { padding: 10px 15px; background: #f8f9fa; border-bottom: 1px solid var(--border-color); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .mode-btn { padding: 5px 12px; font-size: 13px; border: 1px solid #ccc; background: #fff; border-radius: 4px; cursor: pointer; transition: 0.2s; }
+    .mode-btn:hover { background: #eee; } .mode-btn.active { background: var(--text-primary); color: white; border-color: var(--text-primary); }
+    
     .pt-container { padding: 10px; width: 100%; box-sizing: border-box; display: flex; justify-content: center; }
-    .pt-grid {
-        display: grid;
-        grid-template-columns: repeat(18, minmax(0, 1fr)); 
-        gap: 2px; width: 100%; max-width: 1200px;
-    }
-    .pt-cell {
-        aspect-ratio: 1; border: 1px solid var(--border-color); position: relative; cursor: pointer; 
-        background: #fff; display: flex; flex-direction: column; justify-content: space-between; padding: 2px; overflow: hidden;
-        transition: transform 0.2s, background-color 0.3s;
-    }
-    .pt-cell:hover { transform: scale(1.5); z-index: 100; box-shadow: 0 4px 15px rgba(0,0,0,0.2); border-color: var(--accent-color); }
-    .pt-cell.active { border: 2px solid var(--accent-color); z-index: 90; transform: scale(1.1); }
-    .pt-cell .num { font-size: clamp(8px, 1vw, 10px); color: #999; line-height: 1; }
-    .pt-cell .sym { font-size: clamp(10px, 2.2vw, 18px); font-weight: 700; text-align: center; color: var(--text-primary); margin-top: -2px;}
-    .pt-cell .val { font-size: clamp(7px, 0.8vw, 9px); text-align: right; color: #666; white-space: nowrap; }
+    .pt-grid { display: grid; grid-template-columns: repeat(18, minmax(0, 1fr)); gap: 2px; width: 100%; max-width: 1200px; }
+    .pt-cell { aspect-ratio: 1; border: 1px solid var(--border-color); position: relative; cursor: pointer; background: #fff; display: flex; flex-direction: column; justify-content: space-between; padding: 2px; overflow: hidden; transition: transform 0.2s; }
+    .pt-cell:hover { transform: scale(1.5); z-index: 100; box-shadow: 0 4px 15px rgba(0,0,0,0.2); border-color: var(--accent-color); } .pt-cell.active { border: 2px solid var(--accent-color); z-index: 90; transform: scale(1.1); }
+    .pt-cell .num { font-size: clamp(8px, 1vw, 10px); color: #999; line-height: 1; } .pt-cell .sym { font-size: clamp(10px, 2.2vw, 18px); font-weight: 700; text-align: center; color: var(--text-primary); margin-top: -2px;} .pt-cell .val { font-size: clamp(7px, 0.8vw, 9px); text-align: right; color: #666; white-space: nowrap; }
 
-    /* === 详情区布局 === */
+    /* === 详情区 (布局锁定) === */
     #detail-section {
         display: none; padding: 20px; background: #fafafa;
         border-top: 1px solid var(--border-color);
         gap: 20px; flex-wrap: wrap;
+        /* 这里的 animation 可能会导致轻微高度变化，但有了固定高度容器就好多了 */
         animation: slideUp 0.3s ease-out;
+        align-items: flex-start; /* 防止高度拉伸 */
     }
     @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* 左侧：多维信息面板 */
+    /* 左侧：固定高度，内部滚动 */
     .info-column { 
         flex: 1 1 350px; 
         background: #fff; 
         border-radius: 8px; 
         box-shadow: 0 2px 10px rgba(0,0,0,0.05); 
-        overflow: hidden; /* 为了 Tab 圆角 */
-        display: flex;
-        flex-direction: column;
+        display: flex; flex-direction: column;
+        /* ★★★ 核心修复：固定高度，防止抖动 ★★★ */
+        height: 520px; 
     }
 
-    /* 头部信息 */
-    .info-header { padding: 20px 20px 0 20px; }
+    .info-header { padding: 20px 20px 0 20px; flex-shrink: 0; }
     .header-top { display: flex; justify-content: space-between; border-bottom: 2px solid var(--accent-color); padding-bottom: 5px; margin-bottom: 10px;}
     
-    /* 选项卡导航 */
-    .info-tabs {
-        display: flex;
-        background: #f1f3f5;
-        border-bottom: 1px solid #ddd;
-        margin-top: 10px;
-    }
-    .tab-btn {
-        flex: 1;
-        padding: 10px 0;
-        text-align: center;
-        cursor: pointer;
-        font-size: 13px;
-        font-weight: 600;
-        color: #7f8c8d;
-        border-bottom: 3px solid transparent;
-        transition: all 0.2s;
-    }
+    .info-tabs { display: flex; background: #f1f3f5; border-bottom: 1px solid #ddd; margin-top: 10px; flex-shrink: 0; }
+    .tab-btn { flex: 1; padding: 10px 0; text-align: center; cursor: pointer; font-size: 13px; font-weight: 600; color: #7f8c8d; border-bottom: 3px solid transparent; transition: all 0.2s; }
     .tab-btn:hover { background: #e9ecef; color: var(--accent-color); }
-    .tab-btn.active { 
-        background: #fff; 
-        color: var(--accent-color); 
-        border-bottom-color: var(--accent-color); 
-    }
+    .tab-btn.active { background: #fff; color: var(--accent-color); border-bottom-color: var(--accent-color); }
 
-    /* 选项卡内容容器 */
-    .tab-content {
-        padding: 20px;
-        flex: 1;
-        overflow-y: auto;
-        max-height: 400px; /* 防止内容过长 */
-    }
-    .tab-pane { display: none; animation: fadeIn 0.3s; }
-    .tab-pane.active { display: block; }
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .tab-content { padding: 20px; flex: 1; overflow-y: auto; /* 内容多了显示滚动条 */ }
+    .tab-pane { display: none; } .tab-pane.active { display: block; }
 
-    /* 属性列表样式 */
+    /* === 双语表格样式 === */
     .prop-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    .prop-table td { padding: 8px 0; border-bottom: 1px solid #eee; }
-    .prop-table .label { color: #7f8c8d; font-weight: 500; width: 50%; }
-    .prop-table .value { color: #333; font-weight: 600; text-align: right; }
-    .section-title { font-size: 12px; color: #aaa; margin: 15px 0 5px 0; text-transform: uppercase; letter-spacing: 1px; font-weight: bold; border-bottom: 1px dashed #eee; padding-bottom: 3px;}
+    .prop-table td { padding: 8px 0; border-bottom: 1px solid #eee; vertical-align: middle; }
+    
+    /* 标签列 */
+    .prop-table .label { width: 50%; color: var(--gray-text); }
+    .bilingual-label { display: flex; flex-direction: column; line-height: 1.2; }
+    .label-cn { font-weight: bold; font-size: 13px; color: #555; }
+    .label-en { font-size: 11px; color: #aaa; text-transform: uppercase; }
+
+    /* 数值列 */
+    .prop-table .value { color: #333; font-weight: 600; text-align: right; font-family: Consolas, monospace; }
+
+    .section-title { font-size: 12px; color: var(--accent-color); margin: 15px 0 5px 0; font-weight: bold; border-bottom: 1px dashed #eee; padding-bottom: 3px; display:flex; justify-content: space-between;}
 
     /* 2D图 */
-    #bohr-container { width: 100%; height: 180px; display: flex; justify-content: center; margin-bottom: 10px;}
+    #bohr-container { width: 100%; height: 160px; display: flex; justify-content: center; margin-bottom: 10px; flex-shrink: 0;}
     #bohr-svg { width: 100%; height: 100%; overflow: visible; }
-    .electron-shell { fill: none; stroke: #dfe6e9; stroke-width: 1; }
-    .electron-dot { fill: var(--accent-color); }
-    .nucleus { fill: var(--text-primary); }
+    .electron-shell { fill: none; stroke: #dfe6e9; stroke-width: 1; } .electron-dot { fill: var(--accent-color); } .nucleus { fill: var(--text-primary); }
 
-    /* 右侧：3D 视图 */
+    /* 右侧：3D 视图 (固定高度) */
     .viewer-column { flex: 1 1 450px; display: flex; flex-direction: column; gap: 10px; }
     .viewer-box {
-        flex: 1; height: 450px; background: #000; border-radius: 8px; 
-        overflow: hidden; position: relative; border: 1px solid #333;
+        width: 100%; 
+        /* ★★★ 核心修复：固定高度，与左侧保持一致 ★★★ */
+        height: 480px; 
+        background: #000; border-radius: 8px; overflow: hidden; position: relative; border: 1px solid #333;
     }
     #mol-canvas { width: 100%; height: 100%; }
-    .status-overlay { 
-        position: absolute; top:0; left:0; width:100%; height:100%; 
-        display: flex; justify-content: center; align-items: center; flex-direction: column;
-        background: rgba(0,0,0,0.8); color: #ccc; font-size: 13px; text-align: center;
-        z-index: 10; pointer-events: none;
-    }
-
-    .structure-selector { display:flex; gap:8px; flex-wrap:wrap; min-height: 30px;}
-    .variant-btn { padding: 4px 12px; border-radius:15px; border:1px solid #ccc; background:#fff; cursor:pointer; font-size:12px; transition:0.2s;}
-    .variant-btn:hover { border-color: var(--accent-color); color: var(--accent-color); }
+    .status-overlay { position: absolute; top:0; left:0; width:100%; height:100%; display: flex; justify-content: center; align-items: center; flex-direction: column; background: rgba(0,0,0,0.8); color: #ccc; font-size: 13px; text-align: center; z-index: 10; pointer-events: none; }
+    .structure-selector { display:flex; gap:8px; flex-wrap:wrap; min-height: 30px;} 
+    .variant-btn { padding: 4px 12px; border-radius:15px; border:1px solid #ccc; background:#fff; cursor:pointer; font-size:12px; transition:0.2s;} 
+    .variant-btn:hover { border-color: var(--accent-color); color: var(--accent-color); } 
     .variant-btn.active { background:var(--accent-color); color:white; border-color:var(--accent-color); }
 </style>
+
+<script src="https://3Dmol.csb.pitt.edu/build/3Dmol-min.js"></script>
 
 <div id="material-app">
     <div class="control-bar">
@@ -152,78 +106,133 @@
         <button class="mode-btn" onclick="app.setHeatmap('electronegativity_pauling')">Electronegativity</button>
     </div>
 
-    <div class="pt-container">
-        <div class="pt-grid" id="pt-grid"></div>
-    </div>
+    <div class="pt-container"><div class="pt-grid" id="pt-grid"></div></div>
 
     <div id="detail-section">
         <div class="info-column">
             <div class="info-header">
                 <div class="header-top">
-                    <h1 id="inf-sym" style="margin:0; font-size:3rem;">Fe</h1>
+                    <div>
+                        <h1 id="inf-sym" style="margin:0; font-size:3rem; line-height:1;">Fe</h1>
+                        <div id="inf-cn-name" style="font-size: 1.2rem; font-weight:bold; color:#555;">铁</div>
+                    </div>
                     <div style="text-align:right;">
-                        <div id="inf-name" style="font-weight:bold; font-size:1.2rem;">Iron</div>
-                        <div id="inf-num" style="color:#999;">26</div>
+                        <div id="inf-name" style="font-weight:bold; font-size:1.1rem; color:#888;">Iron</div>
+                        <div id="inf-num" style="color:#999; font-size:1.5rem;">26</div>
                     </div>
                 </div>
             </div>
 
             <div class="info-tabs">
-                <div class="tab-btn active" onclick="app.switchTab('overview')">Overview</div>
-                <div class="tab-btn" onclick="app.switchTab('props')">Properties</div>
-                <div class="tab-btn" onclick="app.switchTab('implant')">⚡ Implantation</div>
+                <div class="tab-btn active" onclick="app.switchTab('overview')">概览<br><span style="font-size:10px; font-weight:normal">Overview</span></div>
+                <div class="tab-btn" onclick="app.switchTab('props')">属性<br><span style="font-size:10px; font-weight:normal">Properties</span></div>
+                <div class="tab-btn" onclick="app.switchTab('implant')">离子注入<br><span style="font-size:10px; font-weight:normal">Implantation</span></div>
             </div>
 
             <div class="tab-content">
                 <div id="tab-overview" class="tab-pane active">
-                    <div id="bohr-container">
-                        <svg id="bohr-svg" viewBox="-100 -100 200 200"></svg>
-                    </div>
+                    <div id="bohr-container"><svg id="bohr-svg" viewBox="-100 -100 200 200"></svg></div>
                     <table class="prop-table">
-                        <tr><td class="label">Atomic Mass</td><td class="value" id="inf-mass"></td></tr>
-                        <tr><td class="label">Configuration</td><td class="value" id="inf-config"></td></tr>
-                        <tr><td class="label">Crystal Struct</td><td class="value" id="inf-struct">BCC</td></tr>
+                        <tr>
+                            <td class="label"><div class="bilingual-label"><span class="label-cn">原子量</span><span class="label-en">Atomic Mass</span></div></td>
+                            <td class="value" id="inf-mass"></td>
+                        </tr>
+                        <tr>
+                            <td class="label"><div class="bilingual-label"><span class="label-cn">电子排布</span><span class="label-en">Configuration</span></div></td>
+                            <td class="value" id="inf-config" style="font-size:11px;"></td>
+                        </tr>
+                        <tr>
+                            <td class="label"><div class="bilingual-label"><span class="label-cn">晶体结构</span><span class="label-en">Crystal Structure</span></div></td>
+                            <td class="value" id="inf-struct"></td>
+                        </tr>
+                        <tr>
+                            <td class="label"><div class="bilingual-label"><span class="label-cn">元素类别</span><span class="label-en">Category</span></div></td>
+                            <td class="value" id="inf-cat"></td>
+                        </tr>
                     </table>
                 </div>
 
                 <div id="tab-props" class="tab-pane">
-                    <div class="section-title">Thermodynamic</div>
+                    <div class="section-title"><span>热学性质</span><span>Thermodynamic</span></div>
                     <table class="prop-table">
-                        <tr><td class="label">Melting Point</td><td class="value" id="inf-melt"></td></tr>
-                        <tr><td class="label">Boiling Point</td><td class="value" id="inf-boil">N/A</td></tr>
-                        <tr><td class="label">Phase</td><td class="value" id="inf-phase">Solid</td></tr>
+                        <tr>
+                            <td class="label"><div class="bilingual-label"><span class="label-cn">熔点</span><span class="label-en">Melting Point</span></div></td>
+                            <td class="value" id="inf-melt"></td>
+                        </tr>
+                        <tr>
+                            <td class="label"><div class="bilingual-label"><span class="label-cn">沸点</span><span class="label-en">Boiling Point</span></div></td>
+                            <td class="value" id="inf-boil"></td>
+                        </tr>
+                        <tr>
+                            <td class="label"><div class="bilingual-label"><span class="label-cn">相态 (STP)</span><span class="label-en">Phase</span></div></td>
+                            <td class="value" id="inf-phase"></td>
+                        </tr>
                     </table>
-                    <div class="section-title">Electromagnetic</div>
+                    
+                    <div class="section-title"><span>电磁性质</span><span>Electromagnetic</span></div>
                     <table class="prop-table">
-                        <tr><td class="label">Electronegativity</td><td class="value" id="inf-neg"></td></tr>
-                        <tr><td class="label">Ionization Energy</td><td class="value" id="inf-ion">N/A</td></tr>
-                        <tr><td class="label">Affinity</td><td class="value" id="inf-affinity">N/A</td></tr>
+                        <tr>
+                            <td class="label"><div class="bilingual-label"><span class="label-cn">电负性</span><span class="label-en">Electronegativity</span></div></td>
+                            <td class="value" id="inf-neg"></td>
+                        </tr>
+                        <tr>
+                            <td class="label"><div class="bilingual-label"><span class="label-cn">电离能</span><span class="label-en">Ionization Energy</span></div></td>
+                            <td class="value" id="inf-ion"></td>
+                        </tr>
+                         <tr>
+                            <td class="label"><div class="bilingual-label"><span class="label-cn">电子亲和能</span><span class="label-en">Electron Affinity</span></div></td>
+                            <td class="value" id="inf-affinity"></td>
+                        </tr>
                     </table>
                 </div>
 
                 <div id="tab-implant" class="tab-pane">
-                    <div style="background:#eaf2f8; padding:10px; border-radius:4px; font-size:11px; color:#555; margin-bottom:15px;">
-                        <i class="fa fa-info-circle"></i> Data approximated for standard semiconductor research context (Target: Silicon).
+                    <div style="background:#eaf2f8; padding:8px; border-radius:4px; font-size:11px; color:#555; margin-bottom:15px; border-left:3px solid var(--accent-color);">
+                        <i class="fa fa-info-circle"></i> <b>Reference:</b> 100keV Implantation into Silicon (Estimated)
                     </div>
 
-                    <div class="section-title">Lattice Parameters</div>
+                    <div class="section-title"><span>靶材参数</span><span>Target Parameters</span></div>
                     <table class="prop-table">
-                        <tr><td class="label">Atomic Density</td><td class="value" id="imp-density"></td></tr>
-                        <tr><td class="label">Lattice Constant</td><td class="value" id="imp-lattice"></td></tr>
-                        <tr><td class="label">Displacement Energy ($E_d$)</td><td class="value" id="imp-ed"></td></tr>
+                        <tr>
+                            <td class="label"><div class="bilingual-label"><span class="label-cn">原子密度</span><span class="label-en">Atomic Density</span></div></td>
+                            <td class="value" id="imp-density"></td>
+                        </tr>
+                        <tr>
+                            <td class="label"><div class="bilingual-label"><span class="label-cn">晶格常数</span><span class="label-en">Lattice Constant</span></div></td>
+                            <td class="value" id="imp-lattice"></td>
+                        </tr>
+                        <tr>
+                            <td class="label"><div class="bilingual-label"><span class="label-cn">移位阈能</span><span class="label-en">Displacement Energy (<i>E</i><sub>d</sub>)</span></div></td>
+                            <td class="value" id="imp-ed"></td>
+                        </tr>
                     </table>
 
-                    <div class="section-title">Implantation Dynamics (100keV)</div>
+                    <div class="section-title"><span>注入动力学</span><span>Dynamics (100keV)</span></div>
                     <table class="prop-table">
-                        <tr><td class="label">Projected Range ($R_p$)</td><td class="value" id="imp-rp">~120 nm</td></tr>
-                        <tr><td class="label">Straggle ($\Delta R_p$)</td><td class="value" id="imp-drp">~35 nm</td></tr>
-                        <tr><td class="label">Sputter Yield</td><td class="value" id="imp-sputter"></td></tr>
+                        <tr>
+                            <td class="label"><div class="bilingual-label"><span class="label-cn">投影射程</span><span class="label-en">Projected Range (<i>R</i><sub>p</sub>)</span></div></td>
+                            <td class="value" id="imp-rp">~120 nm</td>
+                        </tr>
+                        <tr>
+                            <td class="label"><div class="bilingual-label"><span class="label-cn">纵向离散</span><span class="label-en">Straggle (&Delta;<i>R</i><sub>p</sub>)</span></div></td>
+                            <td class="value" id="imp-drp">~35 nm</td>
+                        </tr>
+                        <tr>
+                            <td class="label"><div class="bilingual-label"><span class="label-cn">溅射产额</span><span class="label-en">Sputter Yield</span></div></td>
+                            <td class="value" id="imp-sputter"></td>
+                        </tr>
                     </table>
                     
-                    <div class="section-title">Stopping Power</div>
+                    <div class="section-title"><span>阻止本领</span><span>Stopping Power</span></div>
                     <table class="prop-table">
-                        <tr><td class="label">Electronic ($S_e$)</td><td class="value" id="imp-se">High</td></tr>
-                        <tr><td class="label">Nuclear ($S_n$)</td><td class="value" id="imp-sn">Low</td></tr>
+                        <tr>
+                            <td class="label"><div class="bilingual-label"><span class="label-cn">电子阻止</span><span class="label-en">Electronic (<i>S</i><sub>e</sub>)</span></div></td>
+                            <td class="value" id="imp-se"></td>
+                        </tr>
+                        <tr>
+                            <td class="label"><div class="bilingual-label"><span class="label-cn">核阻止</span><span class="label-en">Nuclear (<i>S</i><sub>n</sub>)</span></div></td>
+                            <td class="value" id="imp-sn"></td>
+                        </tr>
                     </table>
                 </div>
             </div>
@@ -308,14 +317,10 @@
             });
         },
 
-        // ★★★ Tab 切换逻辑 ★★★
         switchTab: function(tabName) {
-            // 按钮样式
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
             const activeBtn = document.querySelector(`.tab-btn[onclick*="${tabName}"]`);
             if(activeBtn) activeBtn.classList.add('active');
-
-            // 内容切换
             document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
             document.getElementById(`tab-${tabName}`).classList.add('active');
         },
@@ -324,16 +329,25 @@
             const sec = document.getElementById('detail-section'); sec.style.display = 'flex';
             setTimeout(() => sec.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
 
-            // 1. 概览信息 (Overview)
+            // 1. Header & Overview
             document.getElementById('inf-sym').innerText = el.symbol; 
             document.getElementById('inf-name').innerText = el.name;
+            // 兼容中文名（如果JSON里有 cn_name 则显示，否则显示英文名占位）
+            document.getElementById('inf-cn-name').innerText = el.cn_name || el.name; 
             document.getElementById('inf-num').innerText = el.number; 
             document.getElementById('inf-mass').innerText = el.atomic_mass;
+            
+            // 格式化电子排布
             const fmt = (el.electron_configuration || "").replace(/(\d+)([spdf])/g, '$1 $2').replace(/([spdf])(\d+)/g, '$1<sup>$2</sup>');
             document.getElementById('inf-config').innerHTML = fmt;
+            
+            // 晶体结构 & 类别
+            document.getElementById('inf-struct').innerText = el.phase || "Unknown"; // 这里通常用 Phase 近似，JSON如果有 structure 字段更好
+            document.getElementById('inf-cat').innerText = el.category ? el.category.toUpperCase() : "N/A";
+
             this.drawBohr(el);
 
-            // 2. 详细属性 (Properties) - 安全填充，没有的显示 N/A
+            // 2. Properties
             document.getElementById('inf-melt').innerText = el.melt ? el.melt + " K" : "N/A";
             document.getElementById('inf-boil').innerText = el.boil ? el.boil + " K" : "N/A";
             document.getElementById('inf-phase').innerText = el.phase || "Solid";
@@ -341,54 +355,44 @@
             document.getElementById('inf-ion').innerText = el.ionization_energies ? (el.ionization_energies[0] + " kJ/mol") : "N/A";
             document.getElementById('inf-affinity').innerText = el.electron_affinity ? (el.electron_affinity + " kJ/mol") : "N/A";
 
-            // 3. 离子注入数据 (Implantation) - 计算/模拟数据
+            // 3. Implantation Data (优先读取JSON，没有则计算)
             this.calculateImplantData(el);
 
-            // 加载 3D 结构
             this.setupStructure(el);
-
-            // 默认切回 Overview
             this.switchTab('overview');
         },
 
-        // ★★★ 核心科研功能：模拟离子注入数据 ★★★
-        // 注意：真实环境应读取 JSON，这里为了展示效果做了一些基于物理规律的估算
         calculateImplantData: function(el) {
+            // 如果 JSON 里已经有了 implantation 对象，直接用
+            if(el.implantation) {
+                document.getElementById('imp-density').innerText = el.implantation.density || "N/A";
+                document.getElementById('imp-lattice').innerText = el.implantation.lattice || "N/A";
+                document.getElementById('imp-ed').innerText = el.implantation.ed || "N/A";
+                document.getElementById('imp-rp').innerText = el.implantation.rp || "N/A";
+                document.getElementById('imp-drp').innerText = el.implantation.drp || "N/A";
+                document.getElementById('imp-sputter').innerText = el.implantation.sputter || "N/A";
+                return;
+            }
+
+            // 否则：使用之前的估算逻辑
             const mass = el.atomic_mass;
-            const density = el.density; // g/cm3
-            
-            // 1. 原子密度 (atoms/cm3) = (density * NA) / mass
+            const density = el.density;
             let atomicDensityStr = "N/A";
             if(density && mass) {
                 const ad = (density * 6.022e23) / mass;
                 atomicDensityStr = (ad / 1e22).toFixed(2) + "e22 cm⁻³";
             }
             document.getElementById('imp-density').innerText = atomicDensityStr;
-
-            // 2. 晶格常数 (估算)
-            // 真实情况应查表，这里只作为占位展示
-            document.getElementById('imp-lattice').innerText = "Look up CIF"; 
-
-            // 3. 移位阈能 (Threshold Displacement Energy, Ed)
-            // 金属通常 20-40 eV，半导体 15-25 eV
+            document.getElementById('imp-lattice').innerText = "Check CIF"; 
             const isMetal = el.category && el.category.includes('metal');
             document.getElementById('imp-ed').innerText = isMetal ? "~30 eV" : "~15-25 eV";
-
-            // 4. 溅射产额 (Sputter Yield) - 质量越大约容易溅射
             const yieldVal = (Math.log(mass) * 0.5).toFixed(1);
             document.getElementById('imp-sputter').innerText = `~${yieldVal} atoms/ion`;
-
-            // 5. 阻止本领 (Stopping Power)
-            // 轻元素电子阻止为主，重元素核阻止为主
+            
             if(mass < 20) {
-                document.getElementById('imp-se').innerText = "Dominant";
-                document.getElementById('imp-sn').innerText = "Minor";
-            } else if (mass > 60) {
-                document.getElementById('imp-se').innerText = "Significant";
-                document.getElementById('imp-sn').innerText = "Dominant (Low E)";
+                document.getElementById('imp-se').innerText = "Dominant"; document.getElementById('imp-sn').innerText = "Minor";
             } else {
-                document.getElementById('imp-se').innerText = "Mixed";
-                document.getElementById('imp-sn').innerText = "Mixed";
+                document.getElementById('imp-se').innerText = "Significant"; document.getElementById('imp-sn').innerText = "Dominant";
             }
         },
 
@@ -416,7 +420,6 @@
                 if(entry.default) finalVars.push({ name: "Standard", file: entry.default });
                 if(entry.allotropes) entry.allotropes.forEach(allo => { if(allo.file !== entry.default) finalVars.push(allo); });
             } else { finalVars.push({ name: "Standard", file: `${el.number}.cif` }); }
-
             if(finalVars.length === 0) { this.updateStatus("No Structure Data"); return; }
             finalVars.forEach((v, i) => {
                 const btn = document.createElement('button'); btn.className = 'variant-btn'; btn.innerText = v.name;
@@ -432,7 +435,6 @@
                 if(typeof $3Dmol === 'undefined') throw new Error("3Dmol Library Missing");
                 if(!this.viewer) this.viewer = $3Dmol.createViewer("mol-canvas", { backgroundColor: "#000" });
             } catch (err) { status.innerHTML = `<span style="color:red">SYSTEM ERROR</span><br>${err.message}`; return; }
-
             const path = `data/structures/${file}`;
             fetch(path).then(r => { if(!r.ok) throw new Error(`HTTP ${r.status}`); return r.text(); })
                 .then(cif => {
