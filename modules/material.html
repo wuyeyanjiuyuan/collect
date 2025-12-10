@@ -5,8 +5,6 @@
         --text-primary: #2c3e50;
         --accent-color: #2980b9;
         --border-color: #dfe6e9;
-        --heat-low: #e0f7fa;   /* 热力图低值颜色 */
-        --heat-high: #ff5252;  /* 热力图高值颜色 */
     }
 
     #material-app {
@@ -15,112 +13,109 @@
         color: var(--text-primary);
         display: flex;
         flex-direction: column;
-        min-height: 100vh;
-        padding-bottom: 60px;
+        /* 防止双重滚动条 */
+        height: auto;
+        padding-bottom: 50px;
     }
 
-    /* === 顶部控制栏 (热力图开关) === */
+    /* === 顶部控制栏 === */
     .control-bar {
-        padding: 15px 20px;
+        padding: 10px 15px;
         background: #f8f9fa;
         border-bottom: 1px solid var(--border-color);
         display: flex;
-        gap: 15px;
+        gap: 10px;
         align-items: center;
         flex-wrap: wrap;
+        position: sticky; /* 吸顶效果 */
+        top: 0;
+        z-index: 200;
     }
-    .control-label { font-size: 12px; font-weight: bold; color: #7f8c8d; text-transform: uppercase; }
     .mode-btn {
-        padding: 6px 12px; font-size: 13px; border: 1px solid #ccc; background: #fff; border-radius: 4px; cursor: pointer; transition: all 0.2s;
+        padding: 4px 10px; font-size: 12px; border: 1px solid #ccc; background: #fff; border-radius: 4px; cursor: pointer; transition: 0.2s;
     }
     .mode-btn:hover { background: #eee; }
     .mode-btn.active { background: var(--text-primary); color: white; border-color: var(--text-primary); }
 
-    /* === 周期表 === */
-    .pt-container { padding: 20px; overflow-x: auto; }
+    /* === 周期表容器 (解决了滚动问题) === */
+    .pt-container { 
+        padding: 10px; 
+        width: 100%; 
+        box-sizing: border-box; 
+        display: flex;
+        justify-content: center;
+    }
+    
     .pt-grid {
         display: grid;
-        grid-template-columns: repeat(18, 1fr);
-        gap: 3px;
-        min-width: 900px; max-width: 1400px; margin: 0 auto;
+        /* 核心修改：让格子自动缩放，填满屏幕但不溢出 */
+        grid-template-columns: repeat(18, minmax(0, 1fr)); 
+        gap: 2px;
+        width: 100%;
+        max-width: 1300px; /*在大屏上限制最大宽，防止太扁*/
     }
+
     .pt-cell {
-        aspect-ratio: 1; border: 1px solid var(--border-color); padding: 4px;
-        position: relative; cursor: pointer; transition: transform 0.2s;
-        background: #fff; display: flex; flex-direction: column; justify-content: space-between;
+        aspect-ratio: 1; 
+        border: 1px solid var(--border-color); 
+        position: relative; 
+        cursor: pointer; 
+        transition: transform 0.2s, background-color 0.3s ease; /* 增加颜色过渡 */
+        background: #fff; 
+        display: flex; 
+        flex-direction: column; 
+        justify-content: space-between;
+        padding: 2px;
+        overflow: hidden;
     }
-    .pt-cell:hover { transform: scale(1.25); z-index: 100; box-shadow: 0 8px 20px rgba(0,0,0,0.2); border-color: var(--accent-color); }
-    .pt-cell.active { border: 2px solid var(--accent-color); transform: scale(1.1); z-index: 90; }
-    .pt-cell .num { font-size: 10px; opacity: 0.7; }
-    .pt-cell .sym { font-size: 1.1rem; font-weight: 700; text-align: center; }
-    .pt-cell .val { font-size: 9px; text-align: right; opacity: 0.8; white-space: nowrap; overflow: hidden; }
+    
+    .pt-cell:hover { transform: scale(1.5); z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.2); border-color: var(--accent-color); }
+    .pt-cell.active { border: 2px solid var(--accent-color); z-index: 90; transform: scale(1.1); }
+
+    /* 字体自适应 */
+    .pt-cell .num { font-size: clamp(8px, 1vw, 10px); color: #999; line-height: 1;}
+    .pt-cell .sym { font-size: clamp(10px, 2.5vw, 16px); font-weight: 700; text-align: center; color: var(--text-primary); }
+    .pt-cell .val { font-size: clamp(7px, 0.8vw, 9px); text-align: right; color: #666; white-space: nowrap; }
 
     /* === 详情面板 === */
     #detail-section {
-        display: none; /* 激活时改为 flex */
-        padding: 30px;
+        display: none;
+        padding: 20px;
         background: #fafafa;
         border-top: 1px solid var(--border-color);
-        gap: 30px;
+        gap: 20px;
         flex-wrap: wrap;
         animation: slideUp 0.3s ease-out;
     }
     @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* 左侧：原子信息 & 2D模型 */
-    .info-column { flex: 1 1 350px; background: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-    .header-row { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 2px solid var(--accent-color); margin-bottom: 20px; padding-bottom: 10px; }
-    .header-row h1 { font-size: 3.5rem; margin: 0; color: var(--text-primary); }
-    .header-row span { font-size: 1.5rem; color: #7f8c8d; }
-
-    /* 2D Bohr Model 容器 */
-    #bohr-container {
-        width: 100%; height: 280px;
-        margin: 20px 0;
-        position: relative;
-        display: flex; justify-content: center; align-items: center;
-    }
-    #bohr-svg { width: 100%; height: 100%; overflow: visible; }
+    .info-column { flex: 1 1 300px; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+    
+    /* 2D图 */
+    #bohr-container { width: 100%; height: 220px; margin: 10px 0; display: flex; justify-content: center; }
+    #bohr-svg { width: 100%; height: 100%; }
     .electron-shell { fill: none; stroke: #dfe6e9; stroke-width: 1; }
     .electron-dot { fill: var(--accent-color); }
     .nucleus { fill: var(--text-primary); }
 
-    /* 属性表 */
-    .prop-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f1f1f1; font-size: 14px; }
-    .prop-label { color: #7f8c8d; }
-    .prop-val { font-weight: 600; }
-
-    /* 右侧：3D Viewer & 变体切换 */
-    .viewer-column { flex: 1 1 500px; display: flex; flex-direction: column; gap: 15px; }
-    
-    .structure-selector {
-        background: #fff; padding: 15px; border-radius: 8px; 
-        display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.03);
-    }
-    .variant-btn {
-        padding: 5px 12px; border: 1px solid #ddd; border-radius: 20px; 
-        background: #f8f9fa; cursor: pointer; font-size: 12px; transition: 0.2s;
-    }
-    .variant-btn:hover, .variant-btn.active { background: var(--accent-color); color: white; border-color: var(--accent-color); }
-
+    /* 3D 视图 */
+    .viewer-column { flex: 1 1 400px; display: flex; flex-direction: column; gap: 10px; }
     .viewer-box {
-        flex: 1; min-height: 500px; background: #050505; border-radius: 8px; 
+        flex: 1; height: 450px; background: #000; border-radius: 8px; 
         overflow: hidden; position: relative; border: 1px solid #333;
     }
     #mol-canvas { width: 100%; height: 100%; }
-    .loading-overlay { 
-        position: absolute; top:0; left:0; width:100%; height:100%; 
-        background: rgba(0,0,0,0.8); color: white; display: none; 
-        justify-content: center; align-items: center; z-index: 10;
-    }
-</style>
+    .loading-hint { position: absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:#aaa; font-size:12px; pointer-events:none; }
+    
+    .structure-selector { display:flex; gap:8px; flex-wrap:wrap; padding: 5px 0;}
+    .variant-btn { padding: 4px 10px; border-radius:12px; border:1px solid #ccc; background:#fff; cursor:pointer; font-size:11px;}
+    .variant-btn.active { background:var(--accent-color); color:white; border-color:var(--accent-color); }
 
-<script src="js/3Dmol-min.js"></script>
+</style>
 
 <div id="material-app">
     <div class="control-bar">
-        <span class="control-label">Heatmap Mode:</span>
+        <span style="font-size:12px; font-weight:bold; color:#777;">VIEW MODE:</span>
         <button class="mode-btn active" onclick="app.setHeatmap('none')">Standard</button>
         <button class="mode-btn" onclick="app.setHeatmap('atomic_mass')">Mass</button>
         <button class="mode-btn" onclick="app.setHeatmap('melt')">Melting Point</button>
@@ -133,296 +128,282 @@
 
     <div id="detail-section">
         <div class="info-column">
-            <div class="header-row">
-                <h1 id="inf-sym">Fe</h1>
-                <div>
-                    <div id="inf-name" style="text-align:right; font-weight:bold;">Iron</div>
-                    <div id="inf-cat" style="text-align:right; font-size:12px; color:#999;">Transition Metal</div>
+            <div style="display:flex; justify-content:space-between; border-bottom:2px solid var(--accent-color); padding-bottom:5px;">
+                <h1 id="inf-sym" style="margin:0; font-size:3rem;">Fe</h1>
+                <div style="text-align:right;">
+                    <div id="inf-name" style="font-weight:bold; font-size:1.2rem;">Iron</div>
+                    <div id="inf-num" style="color:#999;">26</div>
                 </div>
             </div>
-
-            <div style="font-size:12px; color:#aaa; margin-bottom:5px;">ELECTRON SHELL DIAGRAM</div>
+            
             <div id="bohr-container">
                 <svg id="bohr-svg" viewBox="-100 -100 200 200"></svg>
             </div>
-
-            <div class="props-list">
-                <div class="prop-row"><span class="prop-label">Atomic Number</span><span class="prop-val" id="inf-num">26</span></div>
-                <div class="prop-row"><span class="prop-label">Atomic Mass</span><span class="prop-val" id="inf-mass">55.845</span></div>
-                <div class="prop-row"><span class="prop-label">Electron Config</span><span class="prop-val" id="inf-config">[Ar] 3d⁶ 4s²</span></div>
-                <div class="prop-row"><span class="prop-label">Melting Point</span><span class="prop-val" id="inf-melt">1811 K</span></div>
+            
+            <div style="font-size:13px; line-height:1.8;">
+                <div><b>Mass:</b> <span id="inf-mass">55.845</span></div>
+                <div><b>Config:</b> <span id="inf-config"></span></div>
+                <div><b>Melting:</b> <span id="inf-melt">1811 K</span></div>
             </div>
         </div>
 
         <div class="viewer-column">
-            <div class="structure-selector" id="variant-list">
-                <span style="font-size:12px; color:#666;">AVAILABLE STRUCTURES:</span>
-                </div>
-
+            <div class="structure-selector" id="variant-list"></div>
             <div class="viewer-box">
                 <div id="mol-canvas"></div>
-                <div class="loading-overlay" id="loading-mask">Loading Structure...</div>
-                <div style="position:absolute; bottom:10px; right:10px; z-index:5;">
-                    <button class="mode-btn" style="opacity:0.8" onclick="app.viewer.zoomTo()">Reset Cam</button>
-                </div>
+                <div id="viewer-msg" class="loading-hint">Select an element</div>
+            </div>
+            <div style="text-align:right;">
+                <button class="mode-btn" onclick="app.resetCam()">Reset Camera</button>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-const ResearchApp = {
-    elements: [],
-    structures: {}, // 存储 structures.json
-    viewer: null,
-    heatmapMode: 'none',
+(function(){
+    const ResearchApp = {
+        elements: [],
+        structures: {},
+        viewer: null,
+        heatmapMode: 'none',
 
-    init: async function() {
-        try {
-            // 并行加载数据
-            const [elRes, structRes] = await Promise.all([
-                fetch('data/elements.json'),
-                fetch('data/structures.json').catch(() => ({ ok: false })) // 允许缺失
-            ]);
-            
-            this.elements = await elRes.json();
-            
-            // 如果 structures.json 存在则读取，否则用空对象
-            if(structRes.ok) this.structures = await structRes.json();
-
-            this.renderTable();
-        } catch (e) {
-            console.error(e);
-            document.getElementById('pt-grid').innerHTML = '<p style="grid-column:1/-1; color:red">Data Load Error. Ensure elements.json exists.</p>';
-        }
-    },
-
-    // 渲染周期表
-    renderTable: function() {
-        const grid = document.getElementById('pt-grid');
-        grid.innerHTML = '';
-        
-        // 1. 计算热力图的最值 (用于归一化颜色)
-        let minVal = Infinity, maxVal = -Infinity;
-        if(this.heatmapMode !== 'none') {
-            this.elements.elements.forEach(el => {
-                const val = el[this.heatmapMode];
-                if(typeof val === 'number') {
-                    if(val < minVal) minVal = val;
-                    if(val > maxVal) maxVal = val;
-                }
-            });
-        }
-
-        // 2. 生成格子
-        this.elements.elements.forEach(el => {
-            const cell = document.createElement('div');
-            cell.className = 'pt-cell';
-            cell.style.gridColumn = el.xpos;
-            cell.style.gridRow = el.ypos;
-            
-            // 填充内容
-            cell.innerHTML = `
-                <span class="num">${el.number}</span>
-                <span class="sym">${el.symbol}</span>
-                <span class="val"></span>
-            `;
-
-            // 热力图逻辑
-            if(this.heatmapMode !== 'none') {
-                const val = el[this.heatmapMode];
-                if(typeof val === 'number') {
-                    cell.querySelector('.val').innerText = val;
-                    // 计算颜色 HSL (Blue 240 -> Red 0)
-                    const ratio = (val - minVal) / (maxVal - minVal);
-                    const hue = 240 - (ratio * 240); 
-                    cell.style.backgroundColor = `hsla(${hue}, 70%, 60%, 0.3)`;
-                }
-            } else {
-                // 默认显示原子量
-                cell.querySelector('.val').innerText = el.atomic_mass.toFixed(2);
-            }
-
-            cell.onclick = () => {
-                document.querySelectorAll('.pt-cell').forEach(c => c.classList.remove('active'));
-                cell.classList.add('active');
-                this.loadDetail(el);
-            };
-
-            grid.appendChild(cell);
-        });
-    },
-
-    setHeatmap: function(mode) {
-        this.heatmapMode = mode;
-        // 按钮样式切换
-        document.querySelectorAll('.control-bar .mode-btn').forEach(btn => {
-            btn.classList.toggle('active', btn.innerText.toLowerCase().includes(mode === 'none' ? 'standard' : mode.split('_')[0]));
-        });
-        this.renderTable();
-    },
-
-    loadDetail: function(el) {
-        const detailSec = document.getElementById('detail-section');
-        detailSec.style.display = 'flex';
-        detailSec.scrollIntoView({ behavior: 'smooth' });
-
-        // 1. 填充基础文本
-        document.getElementById('inf-sym').innerText = el.symbol;
-        document.getElementById('inf-name').innerText = el.name;
-        document.getElementById('inf-cat').innerText = el.category.toUpperCase();
-        document.getElementById('inf-num').innerText = el.number;
-        document.getElementById('inf-mass').innerText = el.atomic_mass;
-        document.getElementById('inf-melt').innerText = el.melt ? el.melt + " K" : "N/A";
-        
-        // 电子排布上标处理
-        const fmtConfig = (el.electron_configuration || "").replace(/(\d+)([spdf])/g, '$1 $2').replace(/([spdf])(\d+)/g, '$1<sup>$2</sup>');
-        document.getElementById('inf-config').innerHTML = fmtConfig;
-
-        // 2. 绘制 2D Bohr Model (核心算法)
-        this.drawBohrModel(el);
-
-        // 3. 准备 3D 结构选择器
-        this.setupStructureSelector(el);
-    },
-
-    // ★★★ 核心升级：2D 电子分布图绘制 ★★★
-    drawBohrModel: function(el) {
-        const svg = document.getElementById('bohr-svg');
-        svg.innerHTML = ''; // 清空
-
-        // 简单的电子解析器：根据能级 1s2 2s2... 汇总到 K L M N 层
-        // 这里为了演示稳定性，我们用简单的 shell mapping 算法
-        // 真实算法需要解析 electron_configuration 字符串
-        // 这里我们用简化版：每层最大容纳 2n^2
-        const totalElectrons = el.number;
-        const shells = [];
-        let remaining = totalElectrons;
-        for(let n=1; n<=7; n++) {
-            const capacity = 2 * n * n;
-            if(remaining > 0) {
-                // 注意：这只是 Bohr 模型的简化展示，真实排布要复杂得多
-                // 为了视觉效果，我们按层画，最外层不超过 8 (除了 Pd 等特例)
-                // 这里我们直接用模拟数据，科研级建议在 json 里加 "shells": [2, 8, 14, 2] 字段
-                // 如果 json 里没有 shells 字段，我们做个简单的近似
-                let current = 0;
-                if (el.shells) {
-                    current = el.shells[n-1] || 0; // 如果JSON里有现成的
-                } else {
-                     // 极其简化的 fallback
-                     const take = Math.min(remaining, (n===1?2 : (n===2?8 : (n===3?18:32))));
-                     current = take;
-                }
-                if(current > 0) shells.push(current);
-                // 这里如果没真实数据，只能画个大概，建议去 backend 补全 shells 数组
-            }
-        }
-        
-        // 如果 JSON 里有 "shells": [2, 8, 18, 1] 这种最好。
-        // 假设 elements.json 数据源里有 shells (Bowserinator的库通常有)
-        // 重新获取真实 shells
-        const realShells = el.shells || shells; 
-
-        // 绘制
-        const center = 0;
-        
-        // 1. 原子核
-        const nucleus = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-        nucleus.setAttribute("cx", 0); nucleus.setAttribute("cy", 0);
-        nucleus.setAttribute("r", 10);
-        nucleus.setAttribute("class", "nucleus");
-        svg.appendChild(nucleus);
-
-        // 2. 轨道与电子
-        realShells.forEach((count, idx) => {
-            const radius = 25 + (idx * 15);
-            
-            // 轨道圈
-            const ring = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-            ring.setAttribute("r", radius);
-            ring.setAttribute("class", "electron-shell");
-            svg.appendChild(ring);
-
-            // 电子
-            for(let i=0; i<count; i++) {
-                const angle = (i / count) * Math.PI * 2;
-                const x = Math.cos(angle) * radius;
-                const y = Math.sin(angle) * radius;
+        init: async function() {
+            try {
+                // 加载数据 (路径是相对于 index.html 的)
+                const [elRes, structRes] = await Promise.all([
+                    fetch('data/elements.json'),
+                    fetch('data/structures.json').catch(()=>({ok:false}))
+                ]);
                 
-                const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-                dot.setAttribute("cx", x); dot.setAttribute("cy", y);
-                dot.setAttribute("r", 2.5);
-                dot.setAttribute("class", "electron-dot");
-                svg.appendChild(dot);
+                if(!elRes.ok) throw new Error("Load elements.json failed");
+                this.elements = await elRes.json();
+                if(structRes.ok) this.structures = await structRes.json();
+
+                // 首次构建 DOM
+                this.buildGridDOM();
+            } catch (e) {
+                console.error(e);
+                document.getElementById('pt-grid').innerHTML = `<p style="color:red; grid-column:1/-1">${e.message}</p>`;
             }
-        });
-    },
+        },
 
-    // ★★★ 核心升级：多结构管理 ★★★
-    setupStructureSelector: function(el) {
-        const container = document.getElementById('variant-list');
-        container.innerHTML = '<span style="font-size:12px; color:#666;">STRUCTURES:</span>';
-        
-        // 1. 查找账本
-        let variants = [];
-        const entry = this.structures[el.number]; // 查 structures.json
-        
-        if (entry) {
-            // 如果账本里有记录
-            variants = entry.allotropes || [];
-            // 把默认的加进去
-            if(entry.default) variants.unshift({ name: "Standard (Conventional)", file: entry.default });
-        } else {
-            // 没账本，盲猜默认文件名
-            variants.push({ name: "Default Structure", file: `${el.number}.cif` });
-        }
+        // 1. 构建 DOM (只运行一次)
+        buildGridDOM: function() {
+            const grid = document.getElementById('pt-grid');
+            grid.innerHTML = '';
+            
+            this.elements.elements.forEach(el => {
+                const cell = document.createElement('div');
+                cell.className = 'pt-cell';
+                cell.style.gridColumn = el.xpos;
+                cell.style.gridRow = el.ypos;
+                cell.dataset.num = el.number; // 绑定原子序数，方便查找
+                
+                cell.innerHTML = `
+                    <span class="num">${el.number}</span>
+                    <span class="sym">${el.symbol}</span>
+                    <span class="val"></span>
+                `;
+                
+                cell.onclick = () => {
+                    document.querySelectorAll('.pt-cell').forEach(c => c.classList.remove('active'));
+                    cell.classList.add('active');
+                    this.loadDetail(el);
+                };
 
-        // 2. 生成按钮
-        variants.forEach((v, i) => {
-            const btn = document.createElement('button');
-            btn.className = 'variant-btn';
-            btn.innerText = v.name;
-            btn.onclick = () => {
-                document.querySelectorAll('.variant-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                this.loadCif(v.file);
-            };
-            container.appendChild(btn);
-            if(i===0) btn.click(); // 默认点第一个
-        });
-    },
-
-    loadCif: function(filename) {
-        const mask = document.getElementById('loading-mask');
-        mask.style.display = 'flex';
-        
-        if(!this.viewer) {
-            this.viewer = $3Dmol.createViewer("mol-canvas", { backgroundColor: "#050505" });
-        }
-
-        fetch(`../data/structures/${filename}`)
-            .then(res => {
-                if(!res.ok) throw new Error("File not found");
-                return res.text();
-            })
-            .then(cif => {
-                this.viewer.clear();
-                const m = this.viewer.addModel(cif, "cif");
-                this.viewer.addUnitCell(m, { color: 'white', boxAxes: true, opacity: 0.5 });
-                this.viewer.setStyle({}, { sphere: {scale: 0.3}, stick: {radius: 0.1} });
-                this.viewer.replicateUnitCell(2, 2, 2, m);
-                this.viewer.zoomTo();
-                this.viewer.render();
-                mask.style.display = 'none';
-            })
-            .catch(err => {
-                console.warn(err);
-                mask.innerText = "Structure Data Not Available";
-                // 只有完全失败时才保留mask显示错误
+                grid.appendChild(cell);
             });
-    }
-};
+            
+            // 初始化显示
+            this.updateGridVisuals();
+        },
 
-window.app = ResearchApp;
-ResearchApp.init();
+        // 2. 更新视觉效果 (平滑切换数据，不重绘DOM)
+        setHeatmap: function(mode) {
+            this.heatmapMode = mode;
+            // 更新按钮状态
+            document.querySelectorAll('.control-bar .mode-btn').forEach(btn => {
+                const txt = btn.innerText.toLowerCase();
+                const m = mode.toLowerCase();
+                if(m === 'none') btn.classList.toggle('active', txt.includes('standard'));
+                else btn.classList.toggle('active', m.includes(txt.split(' ')[0]));
+            });
+            
+            this.updateGridVisuals();
+        },
+
+        updateGridVisuals: function() {
+            let minVal = Infinity, maxVal = -Infinity;
+            // 计算极值
+            if(this.heatmapMode !== 'none') {
+                this.elements.elements.forEach(el => {
+                    const val = el[this.heatmapMode];
+                    if(typeof val === 'number') {
+                        if(val < minVal) minVal = val;
+                        if(val > maxVal) maxVal = val;
+                    }
+                });
+            }
+
+            // 遍历更新 DOM
+            const cells = document.querySelectorAll('.pt-cell');
+            cells.forEach(cell => {
+                const num = parseInt(cell.dataset.num);
+                const el = this.elements.elements.find(e => e.number === num);
+                if(!el) return;
+
+                const valSpan = cell.querySelector('.val');
+                
+                if(this.heatmapMode === 'none') {
+                    // 标准模式
+                    valSpan.innerText = el.atomic_mass.toFixed(2);
+                    cell.style.backgroundColor = '#fff';
+                    cell.querySelector('.sym').style.color = '#2c3e50';
+                } else {
+                    // 热力图模式
+                    const val = el[this.heatmapMode];
+                    if(typeof val === 'number') {
+                        valSpan.innerText = val;
+                        // 归一化颜色 (蓝 -> 红)
+                        const ratio = (val - minVal) / (maxVal - minVal);
+                        const hue = 240 - (ratio * 240); 
+                        cell.style.backgroundColor = `hsla(${hue}, 85%, 65%, 0.4)`; // 0.4透明度保证文字可读
+                    } else {
+                        valSpan.innerText = '-';
+                        cell.style.backgroundColor = '#eee';
+                    }
+                }
+            });
+        },
+
+        loadDetail: function(el) {
+            const sec = document.getElementById('detail-section');
+            sec.style.display = 'flex';
+            // 稍后再滚，体验更好
+            setTimeout(() => sec.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+
+            // 填充文本
+            document.getElementById('inf-sym').innerText = el.symbol;
+            document.getElementById('inf-name').innerText = el.name;
+            document.getElementById('inf-num').innerText = el.number;
+            document.getElementById('inf-mass').innerText = el.atomic_mass;
+            document.getElementById('inf-melt').innerText = el.melt ? el.melt + " K" : "N/A";
+            
+            const fmt = (el.electron_configuration || "").replace(/(\d+)([spdf])/g, '$1 $2').replace(/([spdf])(\d+)/g, '$1<sup>$2</sup>');
+            document.getElementById('inf-config').innerHTML = fmt;
+
+            // 画 2D 图
+            this.drawBohr(el);
+            
+            // 准备 3D
+            this.setupStructure(el);
+        },
+
+        drawBohr: function(el) {
+            const svg = document.getElementById('bohr-svg');
+            svg.innerHTML = '';
+            // 简单画法：每层 2n^2
+            let remaining = el.number;
+            const shells = [];
+            for(let n=1; n<=7; n++) {
+                const cap = 2*n*n;
+                // 模拟简单排布
+                const take = Math.min(remaining, (n==1?2:(n==2?8:(n==3?18:32))));
+                if(take>0) { shells.push(take); remaining -= take; } else break;
+            }
+            // 如果 JSON 有 shells 字段最好
+            const realShells = el.shells || shells;
+            
+            // 绘制
+            const nucleus = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            nucleus.setAttribute("cx", 0); nucleus.setAttribute("cy", 0); nucleus.setAttribute("r", 8); nucleus.setAttribute("class", "nucleus");
+            svg.appendChild(nucleus);
+
+            realShells.forEach((count, i) => {
+                const r = 20 + i*12;
+                const ring = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                ring.setAttribute("r", r); ring.setAttribute("class", "electron-shell");
+                svg.appendChild(ring);
+                for(let j=0; j<count; j++){
+                    const ang = (j/count)*Math.PI*2;
+                    const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                    dot.setAttribute("cx", Math.cos(ang)*r); dot.setAttribute("cy", Math.sin(ang)*r);
+                    dot.setAttribute("r", 2); dot.setAttribute("class", "electron-dot");
+                    svg.appendChild(dot);
+                }
+            });
+        },
+
+        setupStructure: function(el) {
+            const list = document.getElementById('variant-list');
+            list.innerHTML = '';
+            
+            let vars = [];
+            const entry = this.structures[el.number];
+            if(entry) {
+                vars = entry.allotropes || [];
+                if(entry.default) vars.unshift({name: "Standard", file: entry.default});
+            } else {
+                vars.push({name: "Standard", file: `${el.number}.cif`});
+            }
+
+            vars.forEach((v, i) => {
+                const btn = document.createElement('button');
+                btn.className = 'variant-btn';
+                btn.innerText = v.name;
+                btn.onclick = () => {
+                    document.querySelectorAll('.variant-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    this.loadCif(v.file);
+                };
+                list.appendChild(btn);
+                if(i===0) btn.click();
+            });
+        },
+
+        loadCif: function(file) {
+            const msg = document.getElementById('viewer-msg');
+            msg.innerText = "Loading...";
+            
+            if(!this.viewer) {
+                // 初始化 3Dmol
+                this.viewer = $3Dmol.createViewer("mol-canvas", { backgroundColor: "#000" });
+            }
+
+            // ★★★ 核心路径修复 ★★★
+            // 必须是 data/structures/xxx.cif
+            const path = `data/structures/${file}`;
+            
+            fetch(path)
+                .then(r => {
+                    if(!r.ok) throw new Error("File not found");
+                    return r.text();
+                })
+                .then(cif => {
+                    this.viewer.clear();
+                    const m = this.viewer.addModel(cif, "cif");
+                    this.viewer.addUnitCell(m, {boxAxes:true, color:'white', opacity:0.3});
+                    this.viewer.setStyle({}, {sphere:{scale:0.3}, stick:{radius:0.1}});
+                    this.viewer.replicateUnitCell(2,2,2, m);
+                    this.viewer.zoomTo();
+                    this.viewer.render();
+                    msg.innerText = "";
+                })
+                .catch(e => {
+                    console.error("CIF Load Error:", e);
+                    this.viewer.clear();
+                    this.viewer.render(); // 清空画面
+                    msg.innerText = "Data unavailable for this structure";
+                });
+        },
+        
+        resetCam: function() {
+            if(this.viewer) this.viewer.zoomTo();
+        }
+    };
+    
+    window.app = ResearchApp;
+    ResearchApp.init();
+})();
 </script>
