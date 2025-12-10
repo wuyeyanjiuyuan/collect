@@ -1,0 +1,23 @@
+{
+  "6": {
+    "default": "6.cif",
+    "allotropes": [
+      { "name": "Diamond (Cubic)", "file": "6.cif" },
+      { "name": "Graphite (Hexagonal)", "file": "6_graphite.cif" },
+      { "name": "Fullerene C60", "file": "6_c60.cif" }
+    ]
+  },
+  "26": {
+    "default": "26.cif",
+    "allotropes": [
+      { "name": "Alpha Iron (BCC)", "file": "26.cif" },
+      { "name": "Gamma Iron (FCC)", "file": "26_fcc.cif" }
+    ]
+  },
+  "14": {
+    "default": "14.cif",
+    "allotropes": [
+       { "name": "Silicon (Diamond)", "file": "14.cif" }
+    ]
+  }
+}

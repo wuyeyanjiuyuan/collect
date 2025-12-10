@@ -1,366 +1,428 @@
 <!DOCTYPE html>
 <style>
     :root {
-        --mat-bg: #ffffff;
-        --mat-text: #2c3e50;
-        --mat-accent: #2980b9;
-        --cell-border: #dfe6e9;
+        --bg-color: #ffffff;
+        --text-primary: #2c3e50;
+        --accent-color: #2980b9;
+        --border-color: #dfe6e9;
+        --heat-low: #e0f7fa;   /* 热力图低值颜色 */
+        --heat-high: #ff5252;  /* 热力图高值颜色 */
     }
 
     #material-app {
-        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; /* 学术常用字体 */
-        background: var(--mat-bg);
-        color: var(--mat-text);
-        min-height: 100vh;
+        font-family: 'Segoe UI', 'Roboto', Helvetica, Arial, sans-serif;
+        background: var(--bg-color);
+        color: var(--text-primary);
         display: flex;
         flex-direction: column;
-        padding-bottom: 50px;
+        min-height: 100vh;
+        padding-bottom: 60px;
     }
 
-    /* === 顶部：周期表区域 === */
-    .pt-container {
-        padding: 20px;
-        overflow-x: auto; /* 小屏可横向滚动 */
-        border-bottom: 2px solid var(--mat-accent);
+    /* === 顶部控制栏 (热力图开关) === */
+    .control-bar {
+        padding: 15px 20px;
+        background: #f8f9fa;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        gap: 15px;
+        align-items: center;
+        flex-wrap: wrap;
     }
+    .control-label { font-size: 12px; font-weight: bold; color: #7f8c8d; text-transform: uppercase; }
+    .mode-btn {
+        padding: 6px 12px; font-size: 13px; border: 1px solid #ccc; background: #fff; border-radius: 4px; cursor: pointer; transition: all 0.2s;
+    }
+    .mode-btn:hover { background: #eee; }
+    .mode-btn.active { background: var(--text-primary); color: white; border-color: var(--text-primary); }
 
+    /* === 周期表 === */
+    .pt-container { padding: 20px; overflow-x: auto; }
     .pt-grid {
         display: grid;
         grid-template-columns: repeat(18, 1fr);
-        gap: 2px;
-        min-width: 900px; /* 保证周期表不走样 */
-        max-width: 1400px;
-        margin: 0 auto;
+        gap: 3px;
+        min-width: 900px; max-width: 1400px; margin: 0 auto;
     }
-
     .pt-cell {
-        aspect-ratio: 1;
-        border: 1px solid var(--cell-border);
-        padding: 2px;
-        font-size: 12px;
-        cursor: pointer;
-        transition: all 0.2s;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        position: relative;
-        background: #fdfdfd;
+        aspect-ratio: 1; border: 1px solid var(--border-color); padding: 4px;
+        position: relative; cursor: pointer; transition: transform 0.2s;
+        background: #fff; display: flex; flex-direction: column; justify-content: space-between;
     }
-    
-    .pt-cell:hover {
-        transform: scale(1.2);
-        z-index: 10;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-        background: #fff;
-        border-color: var(--mat-accent);
-    }
+    .pt-cell:hover { transform: scale(1.25); z-index: 100; box-shadow: 0 8px 20px rgba(0,0,0,0.2); border-color: var(--accent-color); }
+    .pt-cell.active { border: 2px solid var(--accent-color); transform: scale(1.1); z-index: 90; }
+    .pt-cell .num { font-size: 10px; opacity: 0.7; }
+    .pt-cell .sym { font-size: 1.1rem; font-weight: 700; text-align: center; }
+    .pt-cell .val { font-size: 9px; text-align: right; opacity: 0.8; white-space: nowrap; overflow: hidden; }
 
-    .pt-cell.active {
-        background: var(--mat-accent);
-        color: white;
-        border-color: var(--mat-accent);
-    }
-    .pt-cell.active .num, .pt-cell.active .mass { color: rgba(255,255,255,0.8); }
-
-    .pt-cell.empty { border: none; background: transparent; pointer-events: none; }
-
-    .pt-cell .num { font-size: 10px; color: #7f8c8d; }
-    .pt-cell .sym { font-size: 1.2rem; font-weight: bold; text-align: center; }
-    .pt-cell .mass { font-size: 9px; color: #95a5a6; text-align: right; overflow: hidden; white-space: nowrap;}
-
-    /* 镧系锕系标记 */
-    .lanthanoid { background: #e8f6f3; }
-    .actinoid { background: #fbeee6; }
-
-    /* === 底部：扩展详情区 (科研核心) === */
+    /* === 详情面板 === */
     #detail-section {
-        display: none; /* 默认隐藏 */
-        max-width: 1400px;
-        margin: 0 auto;
-        width: 100%;
-        padding: 30px 20px;
+        display: none; /* 激活时改为 flex */
+        padding: 30px;
         background: #fafafa;
-        border-bottom: 1px solid #ddd;
-    }
-
-    #detail-section.active {
-        display: flex;
-        flex-wrap: wrap;
+        border-top: 1px solid var(--border-color);
         gap: 30px;
-        animation: slideDown 0.4s ease-out;
+        flex-wrap: wrap;
+        animation: slideUp 0.3s ease-out;
     }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
-    @keyframes slideDown {
-        from { opacity: 0; transform: translateY(-10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
+    /* 左侧：原子信息 & 2D模型 */
+    .info-column { flex: 1 1 350px; background: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+    .header-row { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 2px solid var(--accent-color); margin-bottom: 20px; padding-bottom: 10px; }
+    .header-row h1 { font-size: 3.5rem; margin: 0; color: var(--text-primary); }
+    .header-row span { font-size: 1.5rem; color: #7f8c8d; }
 
-    /* 左侧：数据面板 */
-    .info-panel {
-        flex: 1 1 400px; /* 最小400px，自动伸缩 */
-        background: #fff;
-        padding: 25px;
-        border-radius: 8px;
-        box-shadow: 0 2px 15px rgba(0,0,0,0.05);
-    }
-
-    .element-header { border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 20px; display: flex; align-items: baseline; gap: 15px; }
-    .element-header h1 { margin: 0; font-size: 3rem; color: var(--mat-accent); }
-    .element-header h2 { margin: 0; font-size: 1.5rem; color: #7f8c8d; font-weight: 300; }
-    
-    .prop-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
-    .prop-table td { padding: 8px 0; border-bottom: 1px solid #f1f1f1; }
-    .prop-table .label { color: #7f8c8d; width: 40%; }
-    .prop-table .value { font-weight: 500; color: #2c3e50; }
-
-    /* 右侧：3D 视窗 (固定高度，宽度自适应) */
-    .viewer-panel {
-        flex: 1 1 500px;
-        display: flex;
-        flex-direction: column;
-    }
-
-    .viewer-container {
-        width: 100%;
-        height: 500px; /* 3D 画布高度 */
-        background: #000; /* 黑色背景更有科研感 */
-        border-radius: 8px;
+    /* 2D Bohr Model 容器 */
+    #bohr-container {
+        width: 100%; height: 280px;
+        margin: 20px 0;
         position: relative;
-        overflow: hidden;
-        border: 1px solid #ccc;
+        display: flex; justify-content: center; align-items: center;
     }
+    #bohr-svg { width: 100%; height: 100%; overflow: visible; }
+    .electron-shell { fill: none; stroke: #dfe6e9; stroke-width: 1; }
+    .electron-dot { fill: var(--accent-color); }
+    .nucleus { fill: var(--text-primary); }
 
-    #mol-canvas {
-        width: 100%;
-        height: 100%;
-        position: relative;
-    }
+    /* 属性表 */
+    .prop-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f1f1f1; font-size: 14px; }
+    .prop-label { color: #7f8c8d; }
+    .prop-val { font-weight: 600; }
 
-    .viewer-controls {
-        margin-top: 10px;
-        display: flex;
-        gap: 10px;
-        justify-content: flex-end;
-    }
+    /* 右侧：3D Viewer & 变体切换 */
+    .viewer-column { flex: 1 1 500px; display: flex; flex-direction: column; gap: 15px; }
     
-    .btn-sci {
-        padding: 5px 15px; font-size: 12px; background: #fff; border: 1px solid #ccc; cursor: pointer;
-        border-radius: 4px; transition: 0.2s;
+    .structure-selector {
+        background: #fff; padding: 15px; border-radius: 8px; 
+        display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.03);
     }
-    .btn-sci:hover { background: var(--mat-accent); color: white; border-color: var(--mat-accent); }
-    
-    .loading-hint { position: absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:white; pointer-events:none; }
+    .variant-btn {
+        padding: 5px 12px; border: 1px solid #ddd; border-radius: 20px; 
+        background: #f8f9fa; cursor: pointer; font-size: 12px; transition: 0.2s;
+    }
+    .variant-btn:hover, .variant-btn.active { background: var(--accent-color); color: white; border-color: var(--accent-color); }
 
+    .viewer-box {
+        flex: 1; min-height: 500px; background: #050505; border-radius: 8px; 
+        overflow: hidden; position: relative; border: 1px solid #333;
+    }
+    #mol-canvas { width: 100%; height: 100%; }
+    .loading-overlay { 
+        position: absolute; top:0; left:0; width:100%; height:100%; 
+        background: rgba(0,0,0,0.8); color: white; display: none; 
+        justify-content: center; align-items: center; z-index: 10;
+    }
 </style>
 
-<script src="js/3Dmol-min.js"></script>
+<script src="https://3Dmol.csb.pitt.edu/build/3Dmol-min.js"></script>
+
 <div id="material-app">
+    <div class="control-bar">
+        <span class="control-label">Heatmap Mode:</span>
+        <button class="mode-btn active" onclick="app.setHeatmap('none')">Standard</button>
+        <button class="mode-btn" onclick="app.setHeatmap('atomic_mass')">Mass</button>
+        <button class="mode-btn" onclick="app.setHeatmap('melt')">Melting Point</button>
+        <button class="mode-btn" onclick="app.setHeatmap('electronegativity_pauling')">Electronegativity</button>
+    </div>
+
     <div class="pt-container">
-        <h3 style="margin: 0 0 10px 20px; color:#555;">Periodic Table of Elements <span style="font-size:12px; font-weight:normal; color:#999;">Select an element to load CIF structure</span></h3>
-        <div class="pt-grid" id="pt-grid">
-            <div style="grid-column: 1/19; text-align:center; padding: 20px;">正在加载数据库...</div>
-        </div>
+        <div class="pt-grid" id="pt-grid"></div>
     </div>
 
     <div id="detail-section">
-        <div class="info-panel">
-            <div class="element-header">
-                <h1 id="disp-sym">Fe</h1>
-                <h2 id="disp-name">Iron</h2>
+        <div class="info-column">
+            <div class="header-row">
+                <h1 id="inf-sym">Fe</h1>
+                <div>
+                    <div id="inf-name" style="text-align:right; font-weight:bold;">Iron</div>
+                    <div id="inf-cat" style="text-align:right; font-size:12px; color:#999;">Transition Metal</div>
+                </div>
             </div>
-            <p id="disp-summary" style="line-height:1.6; color:#555; margin-bottom:20px;">
-                Description loading...
-            </p>
 
-            <table class="prop-table">
-                <tr><td class="label">Atomic Number</td><td class="value" id="disp-num">26</td></tr>
-                <tr><td class="label">Atomic Mass</td><td class="value" id="disp-mass">55.845 u</td></tr>
-                <tr><td class="label">Density</td><td class="value" id="disp-density">7.874 g/cm³</td></tr>
-                <tr><td class="label">Melting Point</td><td class="value" id="disp-melt">1811 K</td></tr>
-                <tr><td class="label">Electron Config</td><td class="value" id="disp-config">[Ar] 3d6 4s2</td></tr>
-                <tr><td class="label">Discovery</td><td class="value" id="disp-discovery">Unknown</td></tr>
-            </table>
+            <div style="font-size:12px; color:#aaa; margin-bottom:5px;">ELECTRON SHELL DIAGRAM</div>
+            <div id="bohr-container">
+                <svg id="bohr-svg" viewBox="-100 -100 200 200"></svg>
+            </div>
+
+            <div class="props-list">
+                <div class="prop-row"><span class="prop-label">Atomic Number</span><span class="prop-val" id="inf-num">26</span></div>
+                <div class="prop-row"><span class="prop-label">Atomic Mass</span><span class="prop-val" id="inf-mass">55.845</span></div>
+                <div class="prop-row"><span class="prop-label">Electron Config</span><span class="prop-val" id="inf-config">[Ar] 3d⁶ 4s²</span></div>
+                <div class="prop-row"><span class="prop-label">Melting Point</span><span class="prop-val" id="inf-melt">1811 K</span></div>
+            </div>
         </div>
 
-        <div class="viewer-panel">
-            <div class="viewer-container">
+        <div class="viewer-column">
+            <div class="structure-selector" id="variant-list">
+                <span style="font-size:12px; color:#666;">AVAILABLE STRUCTURES:</span>
+                </div>
+
+            <div class="viewer-box">
                 <div id="mol-canvas"></div>
-                <div id="viewer-msg" class="loading-hint">等待选择元素...</div>
-            </div>
-            <div class="viewer-controls">
-                <span style="margin-right:auto; font-size:12px; color:#666; align-self:center;">* 结构数据来源: COD / Materials Project</span>
-                <button class="btn-sci" onclick="app.viewerStyle('sphere')">CPK Sphere</button>
-                <button class="btn-sci" onclick="app.viewerStyle('stick')">Stick</button>
-                <button class="btn-sci" onclick="app.viewerStyle('polyhedra')">Polyhedra</button>
+                <div class="loading-overlay" id="loading-mask">Loading Structure...</div>
+                <div style="position:absolute; bottom:10px; right:10px; z-index:5;">
+                    <button class="mode-btn" style="opacity:0.8" onclick="app.viewer.zoomTo()">Reset Cam</button>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-(function(){
-    // 科研应用命名空间
-    const ResearchApp = {
-        data: [], // 存储 fetch 下来的完整数据
-        viewer: null, // 3Dmol 对象
-        currentElement: null,
+const ResearchApp = {
+    elements: [],
+    structures: {}, // 存储 structures.json
+    viewer: null,
+    heatmapMode: 'none',
 
-        init: async function() {
-            try {
-                // 1. 读取本地数据文件
-                // 注意：请确保你上传了 elements.json 到 ../data/ 目录
-                // 如果本地调试跨域报错，请使用 live-server 或 python -m http.server
-                const response = await fetch('data/elements.json'); 
-                // 为了演示，如果fetch失败(比如你还没传文件)，我先做一个假数据 fallback
-                if(!response.ok) throw new Error("Data file not found");
-                this.data = await response.json();
-                
-                this.renderTable();
-            } catch (e) {
-                console.error("加载数据失败，请检查路径 ../data/elements.json", e);
-                document.getElementById('pt-grid').innerHTML = `<p style="color:red; grid-column:1/-1">错误: 无法加载数据文件 (${e.message})。<br>请确保 'elements.json' 已上传至 'data' 文件夹。</p>`;
-            }
-        },
-
-        renderTable: function() {
-            const grid = document.getElementById('pt-grid');
-            grid.innerHTML = '';
-
-            // 周期表 18列 x 7行 (加 镧系锕系)
-            // 这里我们需要把 data 里的元素映射到 (xpos, ypos)
-            // Bowserinator 的 JSON 数据通常包含 xpos, ypos 字段
+    init: async function() {
+        try {
+            // 并行加载数据
+            const [elRes, structRes] = await Promise.all([
+                fetch('../data/elements.json'),
+                fetch('../data/structures.json').catch(() => ({ ok: false })) // 允许缺失
+            ]);
             
-            // 为了防止 JSON 格式差异，我们用标准的 grid 坐标映射
-            // 这是一个简化的映射逻辑，保证位置正确
-            this.data.elements.forEach(el => {
-                const cell = document.createElement('div');
-                cell.className = 'pt-cell';
-                cell.style.gridColumn = el.xpos; // JSON 里的列
-                cell.style.gridRow = el.ypos;    // JSON 里的行
-
-                // 区分镧系/锕系
-                if(el.category.includes('lanthan')) cell.classList.add('lanthanoid');
-                if(el.category.includes('actin')) cell.classList.add('actinoid');
-
-                cell.innerHTML = `
-                    <span class="num">${el.number}</span>
-                    <span class="sym">${el.symbol}</span>
-                    <span class="mass">${el.atomic_mass.toFixed(2)}</span>
-                `;
-
-                cell.onclick = () => {
-                    // 移除其他选中
-                    document.querySelectorAll('.pt-cell').forEach(c => c.classList.remove('active'));
-                    cell.classList.add('active');
-                    this.loadDetail(el);
-                };
-
-                grid.appendChild(cell);
-            });
-        },
-
-        loadDetail: function(el) {
-            this.currentElement = el;
-            const section = document.getElementById('detail-section');
-            section.classList.add('active');
-
-            // 1. 填充文本数据
-            document.getElementById('disp-sym').innerText = el.symbol;
-            document.getElementById('disp-name').innerText = el.name;
-            document.getElementById('disp-summary').innerText = el.summary || "No description available.";
-            document.getElementById('disp-num').innerText = el.number;
-            document.getElementById('disp-mass').innerText = el.atomic_mass;
-            document.getElementById('disp-density').innerText = el.density + " g/cm³";
-            document.getElementById('disp-melt').innerText = el.melt ? el.melt + " K" : "N/A";
-            document.getElementById('disp-config').innerText = el.electron_configuration;
-            document.getElementById('disp-discovery').innerText = el.discovered_by || "Unknown";
-
-            // 滚动到详情区 (为了体验更好)
-            section.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-
-            // 2. 加载 3D 结构 (科研级 CIF 加载)
-            this.loadStructure(el.number);
-        },
-
-        loadStructure: function(atomicNumber) {
-            const msg = document.getElementById('viewer-msg');
-            msg.innerText = `正在请求晶体数据: ${atomicNumber}.cif ...`;
-            msg.style.display = 'block';
-
-            // 初始化 Viewer (单例)
-            if(!this.viewer) {
-                const element = $('#mol-canvas'); // 3Dmol 依赖 jQuery 选择器或原生
-                // 3Dmol.createViewer(element, config)
-                this.viewer = $3Dmol.createViewer("mol-canvas", {
-                    backgroundColor: "black" // 科研常用黑色背景
-                });
-            }
-
-            this.viewer.clear();
-
-            // 构建文件路径: ../data/structures/26.cif
-            const cifUrl = `data/structures/${atomicNumber}.cif`;
-
-            // fetch CIF 文件
-            fetch(cifUrl)
-                .then(res => {
-                    if(!res.ok) throw new Error("No structure file");
-                    return res.text();
-                })
-                .then(cifData => {
-                    msg.style.display = 'none';
-                    
-                    // 解析 CIF
-                    const m = this.viewer.addModel(cifData, "cif");
-                    
-                    // 设置样式: 
-                    // 1. 显示晶胞框 (Unit Cell Box)
-                    this.viewer.addUnitCell(m);
-                    
-                    // 2. 显示原子 (Sphere)
-                    this.viewer.setStyle({}, {sphere: {scale: 0.3}, stick: {radius: 0.1}});
-                    
-                    // 3. 复制超晶胞 (Supercell) - 看起来更像一块材料
-                    // 3Dmol 支持 replicateUnitCell
-                    this.viewer.replicateUnitCell(2, 2, 2, m); 
-
-                    this.viewer.zoomTo();
-                    this.viewer.render();
-                })
-                .catch(err => {
-                    console.warn(err);
-                    msg.innerText = `暂无该元素的晶体文件 (${atomicNumber}.cif)`;
-                    // Fallback: 如果没有 CIF 文件，我们生成一个简单的占位球
-                    this.viewer.clear();
-                    this.viewer.addModel(); // empty model
-                    this.viewer.addSphere({center:{x:0,y:0,z:0}, radius: 3, color: 'skyblue'});
-                    this.viewer.zoomTo();
-                    this.viewer.render();
-                });
-        },
-
-        // 切换显示模式
-        viewerStyle: function(type) {
-            if(!this.viewer) return;
-            this.viewer.removeAllLabels();
+            this.elements = await elRes.json();
             
-            if(type === 'sphere') {
-                this.viewer.setStyle({}, {sphere: {scale: 0.8}});
-            } else if (type === 'stick') {
-                this.viewer.setStyle({}, {stick: {radius: 0.2}, sphere: {scale: 0.3}});
-            } else if (type === 'polyhedra') {
-                // 多面体模式 (适合观察配位)
-                this.viewer.setStyle({}, {polyhedra: {outline: true}, stick: {radius:0.1}});
-            }
-            this.viewer.render();
+            // 如果 structures.json 存在则读取，否则用空对象
+            if(structRes.ok) this.structures = await structRes.json();
+
+            this.renderTable();
+        } catch (e) {
+            console.error(e);
+            document.getElementById('pt-grid').innerHTML = '<p style="grid-column:1/-1; color:red">Data Load Error. Ensure elements.json exists.</p>';
         }
-    };
+    },
 
-    // 暴露给全局以便 HTML onclick 调用
-    window.app = ResearchApp;
+    // 渲染周期表
+    renderTable: function() {
+        const grid = document.getElementById('pt-grid');
+        grid.innerHTML = '';
+        
+        // 1. 计算热力图的最值 (用于归一化颜色)
+        let minVal = Infinity, maxVal = -Infinity;
+        if(this.heatmapMode !== 'none') {
+            this.elements.elements.forEach(el => {
+                const val = el[this.heatmapMode];
+                if(typeof val === 'number') {
+                    if(val < minVal) minVal = val;
+                    if(val > maxVal) maxVal = val;
+                }
+            });
+        }
 
-    // 启动
-    ResearchApp.init();
+        // 2. 生成格子
+        this.elements.elements.forEach(el => {
+            const cell = document.createElement('div');
+            cell.className = 'pt-cell';
+            cell.style.gridColumn = el.xpos;
+            cell.style.gridRow = el.ypos;
+            
+            // 填充内容
+            cell.innerHTML = `
+                <span class="num">${el.number}</span>
+                <span class="sym">${el.symbol}</span>
+                <span class="val"></span>
+            `;
 
-})();
+            // 热力图逻辑
+            if(this.heatmapMode !== 'none') {
+                const val = el[this.heatmapMode];
+                if(typeof val === 'number') {
+                    cell.querySelector('.val').innerText = val;
+                    // 计算颜色 HSL (Blue 240 -> Red 0)
+                    const ratio = (val - minVal) / (maxVal - minVal);
+                    const hue = 240 - (ratio * 240); 
+                    cell.style.backgroundColor = `hsla(${hue}, 70%, 60%, 0.3)`;
+                }
+            } else {
+                // 默认显示原子量
+                cell.querySelector('.val').innerText = el.atomic_mass.toFixed(2);
+            }
+
+            cell.onclick = () => {
+                document.querySelectorAll('.pt-cell').forEach(c => c.classList.remove('active'));
+                cell.classList.add('active');
+                this.loadDetail(el);
+            };
+
+            grid.appendChild(cell);
+        });
+    },
+
+    setHeatmap: function(mode) {
+        this.heatmapMode = mode;
+        // 按钮样式切换
+        document.querySelectorAll('.control-bar .mode-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.innerText.toLowerCase().includes(mode === 'none' ? 'standard' : mode.split('_')[0]));
+        });
+        this.renderTable();
+    },
+
+    loadDetail: function(el) {
+        const detailSec = document.getElementById('detail-section');
+        detailSec.style.display = 'flex';
+        detailSec.scrollIntoView({ behavior: 'smooth' });
+
+        // 1. 填充基础文本
+        document.getElementById('inf-sym').innerText = el.symbol;
+        document.getElementById('inf-name').innerText = el.name;
+        document.getElementById('inf-cat').innerText = el.category.toUpperCase();
+        document.getElementById('inf-num').innerText = el.number;
+        document.getElementById('inf-mass').innerText = el.atomic_mass;
+        document.getElementById('inf-melt').innerText = el.melt ? el.melt + " K" : "N/A";
+        
+        // 电子排布上标处理
+        const fmtConfig = (el.electron_configuration || "").replace(/(\d+)([spdf])/g, '$1 $2').replace(/([spdf])(\d+)/g, '$1<sup>$2</sup>');
+        document.getElementById('inf-config').innerHTML = fmtConfig;
+
+        // 2. 绘制 2D Bohr Model (核心算法)
+        this.drawBohrModel(el);
+
+        // 3. 准备 3D 结构选择器
+        this.setupStructureSelector(el);
+    },
+
+    // ★★★ 核心升级：2D 电子分布图绘制 ★★★
+    drawBohrModel: function(el) {
+        const svg = document.getElementById('bohr-svg');
+        svg.innerHTML = ''; // 清空
+
+        // 简单的电子解析器：根据能级 1s2 2s2... 汇总到 K L M N 层
+        // 这里为了演示稳定性，我们用简单的 shell mapping 算法
+        // 真实算法需要解析 electron_configuration 字符串
+        // 这里我们用简化版：每层最大容纳 2n^2
+        const totalElectrons = el.number;
+        const shells = [];
+        let remaining = totalElectrons;
+        for(let n=1; n<=7; n++) {
+            const capacity = 2 * n * n;
+            if(remaining > 0) {
+                // 注意：这只是 Bohr 模型的简化展示，真实排布要复杂得多
+                // 为了视觉效果，我们按层画，最外层不超过 8 (除了 Pd 等特例)
+                // 这里我们直接用模拟数据，科研级建议在 json 里加 "shells": [2, 8, 14, 2] 字段
+                // 如果 json 里没有 shells 字段，我们做个简单的近似
+                let current = 0;
+                if (el.shells) {
+                    current = el.shells[n-1] || 0; // 如果JSON里有现成的
+                } else {
+                     // 极其简化的 fallback
+                     const take = Math.min(remaining, (n===1?2 : (n===2?8 : (n===3?18:32))));
+                     current = take;
+                }
+                if(current > 0) shells.push(current);
+                // 这里如果没真实数据，只能画个大概，建议去 backend 补全 shells 数组
+            }
+        }
+        
+        // 如果 JSON 里有 "shells": [2, 8, 18, 1] 这种最好。
+        // 假设 elements.json 数据源里有 shells (Bowserinator的库通常有)
+        // 重新获取真实 shells
+        const realShells = el.shells || shells; 
+
+        // 绘制
+        const center = 0;
+        
+        // 1. 原子核
+        const nucleus = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        nucleus.setAttribute("cx", 0); nucleus.setAttribute("cy", 0);
+        nucleus.setAttribute("r", 10);
+        nucleus.setAttribute("class", "nucleus");
+        svg.appendChild(nucleus);
+
+        // 2. 轨道与电子
+        realShells.forEach((count, idx) => {
+            const radius = 25 + (idx * 15);
+            
+            // 轨道圈
+            const ring = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            ring.setAttribute("r", radius);
+            ring.setAttribute("class", "electron-shell");
+            svg.appendChild(ring);
+
+            // 电子
+            for(let i=0; i<count; i++) {
+                const angle = (i / count) * Math.PI * 2;
+                const x = Math.cos(angle) * radius;
+                const y = Math.sin(angle) * radius;
+                
+                const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                dot.setAttribute("cx", x); dot.setAttribute("cy", y);
+                dot.setAttribute("r", 2.5);
+                dot.setAttribute("class", "electron-dot");
+                svg.appendChild(dot);
+            }
+        });
+    },
+
+    // ★★★ 核心升级：多结构管理 ★★★
+    setupStructureSelector: function(el) {
+        const container = document.getElementById('variant-list');
+        container.innerHTML = '<span style="font-size:12px; color:#666;">STRUCTURES:</span>';
+        
+        // 1. 查找账本
+        let variants = [];
+        const entry = this.structures[el.number]; // 查 structures.json
+        
+        if (entry) {
+            // 如果账本里有记录
+            variants = entry.allotropes || [];
+            // 把默认的加进去
+            if(entry.default) variants.unshift({ name: "Standard (Conventional)", file: entry.default });
+        } else {
+            // 没账本，盲猜默认文件名
+            variants.push({ name: "Default Structure", file: `${el.number}.cif` });
+        }
+
+        // 2. 生成按钮
+        variants.forEach((v, i) => {
+            const btn = document.createElement('button');
+            btn.className = 'variant-btn';
+            btn.innerText = v.name;
+            btn.onclick = () => {
+                document.querySelectorAll('.variant-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                this.loadCif(v.file);
+            };
+            container.appendChild(btn);
+            if(i===0) btn.click(); // 默认点第一个
+        });
+    },
+
+    loadCif: function(filename) {
+        const mask = document.getElementById('loading-mask');
+        mask.style.display = 'flex';
+        
+        if(!this.viewer) {
+            this.viewer = $3Dmol.createViewer("mol-canvas", { backgroundColor: "#050505" });
+        }
+
+        fetch(`../data/structures/${filename}`)
+            .then(res => {
+                if(!res.ok) throw new Error("File not found");
+                return res.text();
+            })
+            .then(cif => {
+                this.viewer.clear();
+                const m = this.viewer.addModel(cif, "cif");
+                this.viewer.addUnitCell(m, { color: 'white', boxAxes: true, opacity: 0.5 });
+                this.viewer.setStyle({}, { sphere: {scale: 0.3}, stick: {radius: 0.1} });
+                this.viewer.replicateUnitCell(2, 2, 2, m);
+                this.viewer.zoomTo();
+                this.viewer.render();
+                mask.style.display = 'none';
+            })
+            .catch(err => {
+                console.warn(err);
+                mask.innerText = "Structure Data Not Available";
+                // 只有完全失败时才保留mask显示错误
+            });
+    }
+};
+
+window.app = ResearchApp;
+ResearchApp.init();
 </script>
