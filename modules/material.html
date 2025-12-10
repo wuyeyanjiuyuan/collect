@@ -116,7 +116,7 @@
     }
 </style>
 
-<script src="https://3Dmol.csb.pitt.edu/build/3Dmol-min.js"></script>
+<script src="js/3Dmol-min.js"></script>
 
 <div id="material-app">
     <div class="control-bar">
@@ -181,8 +181,8 @@ const ResearchApp = {
         try {
             // 并行加载数据
             const [elRes, structRes] = await Promise.all([
-                fetch('../data/elements.json'),
-                fetch('../data/structures.json').catch(() => ({ ok: false })) // 允许缺失
+                fetch('data/elements.json'),
+                fetch('data/structures.json').catch(() => ({ ok: false })) // 允许缺失
             ]);
             
             this.elements = await elRes.json();
