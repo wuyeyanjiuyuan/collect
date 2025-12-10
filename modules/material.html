@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <style>
-    /* ... (CSS 保持 V12.0 版完全不变，这里为了节省篇幅省略，请直接保留你上一个版本的 CSS) ... */
+    /* === 样式表 (保留了之前的优良设计) === */
     :root {
         --bg-color: #ffffff;
         --text-primary: #2c3e50;
@@ -17,7 +17,6 @@
         display: flex; flex-direction: column; padding-bottom: 50px;
     }
 
-    /* === 顶部 & 周期表 === */
     .control-bar { padding: 10px 20px; background: #f8f9fa; border-bottom: 1px solid var(--border-color); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
     .mode-btn { padding: 6px 14px; font-size: 13px; border: 1px solid #ccc; background: #fff; border-radius: 4px; cursor: pointer; transition: 0.2s; }
     .mode-btn:hover { background: #eee; } .mode-btn.active { background: var(--text-primary); color: white; border-color: var(--text-primary); }
@@ -30,23 +29,10 @@
     .pt-cell .sym { font-size: clamp(12px, 2.2vw, 20px); font-weight: 700; text-align: center; color: var(--text-primary); margin-top: -2px;} 
     .pt-cell .val { font-size: clamp(8px, 0.8vw, 10px); text-align: right; color: #666; white-space: nowrap; }
 
-    /* === 详情区布局 === */
-    #detail-section {
-        display: none; padding: 25px; background: #fafafa;
-        border-top: 1px solid var(--border-color);
-        gap: 25px; flex-wrap: wrap; animation: slideUp 0.3s ease-out;
-        align-items: flex-start; /* 顶部对齐 */
-    }
+    #detail-section { display: none; padding: 25px; background: #fafafa; border-top: 1px solid var(--border-color); gap: 25px; flex-wrap: wrap; animation: slideUp 0.3s ease-out; align-items: flex-start; }
     @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* === 左侧面板 (字体放大版) === */
-    .info-column { 
-        flex: 1 1 420px; /* 宽度加宽 */
-        background: #fff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); 
-        display: flex; flex-direction: column; 
-        height: 780px; /* 总高度 */
-    }
-
+    .info-column { flex: 1 1 420px; background: #fff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; flex-direction: column; height: 780px; }
     .info-header { padding: 20px 25px 0 25px; flex-shrink: 0; }
     .header-top { display: flex; justify-content: space-between; border-bottom: 2px solid var(--accent-color); padding-bottom: 8px; margin-bottom: 10px;}
     
@@ -58,84 +44,34 @@
     .tab-content { padding: 20px 25px; flex: 1; overflow-y: auto; }
     .tab-pane { display: none; } .tab-pane.active { display: block; }
 
-    /* ★★★ 字体优化 ★★★ */
-    .prop-table { width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 15px; } /* 基础字号 14px */
+    .prop-table { width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 15px; }
     .prop-table td { padding: 10px 0; border-bottom: 1px solid #eee; vertical-align: middle; }
     .bilingual-label { display: flex; flex-direction: column; line-height: 1.2; }
-    .label-cn { font-weight: bold; font-size: 15px; color: #444; } /* 中文加大 */
-    .label-en { font-size: 12px; color: #999; text-transform: uppercase; margin-top: 2px; } /* 英文微调 */
+    .label-cn { font-weight: bold; font-size: 15px; color: #444; }
+    .label-en { font-size: 12px; color: #999; text-transform: uppercase; margin-top: 2px; }
     .prop-table .value { color: #222; font-size: 15px; font-weight: 600; text-align: right; font-family: Consolas, monospace; }
 
-    .summary-text { 
-        font-size: 14px; line-height: 1.6; color: #444; 
-        margin-bottom: 15px; padding: 12px; background: #f8f9fa; border-radius: 4px; 
-        border-left: 4px solid var(--accent-color);
-        max-height: 100px; overflow-y: auto;
-    }
+    .summary-text { font-size: 14px; line-height: 1.6; color: #444; margin-bottom: 15px; padding: 12px; background: #f8f9fa; border-radius: 4px; border-left: 4px solid var(--accent-color); max-height: 100px; overflow-y: auto; }
 
-    /* Bohr 模型 */
     #bohr-container { width: 100%; height: 220px; display: flex; justify-content: center; margin-bottom: 15px; flex-shrink: 0; background: #fff;}
     #bohr-svg { width: 100%; height: 100%; overflow: visible; }
-    .electron-shell { fill: none; stroke: #ccc; stroke-width: 1.5; } 
-    .electron-dot { fill: var(--accent-color); } .nucleus { fill: var(--text-primary); }
+    .electron-shell { fill: none; stroke: #ccc; stroke-width: 1.5; } .electron-dot { fill: var(--accent-color); } .nucleus { fill: var(--text-primary); }
 
-    /* === 右侧布局重构 (Split View) === */
-    .viewer-column { 
-        flex: 1 1 420px; 
-        display: flex; flex-direction: column; 
-        height: 780px; /* 与左侧等高 */
-        gap: 15px; 
-    }
-
-    /* 上半部：3D 视窗 (正方形) */
-    .viewer-container {
-        flex: 0 0 450px; /* 固定高度 450px */
-        display: flex; flex-direction: column; gap: 10px;
-    }
-    
+    .viewer-column { flex: 1 1 420px; display: flex; flex-direction: column; height: 780px; gap: 15px; }
+    .viewer-container { flex: 0 0 450px; display: flex; flex-direction: column; gap: 10px; }
     .structure-selector { display:flex; gap:8px; flex-wrap:wrap; min-height: 30px;} 
     .variant-btn { padding: 5px 12px; border-radius:15px; border:1px solid #aaa; background:#fff; cursor:pointer; font-size:13px; transition:0.2s; font-weight: 500;} 
     .variant-btn:hover { border-color: var(--accent-color); color: var(--accent-color); } 
     .variant-btn.active { background:var(--accent-color); color:white; border-color:var(--accent-color); border: 1px solid var(--accent-color);}
 
-    .viewer-box { 
-        width: 100%; flex: 1; /* 填满剩余空间 */
-        background: var(--viewer-bg); 
-        border-radius: 8px; overflow: hidden; position: relative; border: 1px solid #ccc; 
-    }
+    .viewer-box { width: 100%; flex: 1; background: var(--viewer-bg); border-radius: 8px; overflow: hidden; position: relative; border: 1px solid #ccc; }
     #mol-canvas { width: 100%; height: 100%; }
     .status-overlay { position: absolute; top:0; left:0; width:100%; height:100%; display: flex; justify-content: center; align-items: center; flex-direction: column; background: rgba(0,0,0,0.5); color: #fff; font-size: 14px; text-align: center; z-index: 10; pointer-events: none; }
 
-    /* 下半部：化合物拓展栏 */
-    .compounds-panel {
-        flex: 1; /* 占据剩余高度 */
-        background: #fff;
-        border-radius: 8px;
-        border: 1px solid #ddd;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.03);
-        padding: 15px;
-        display: flex; flex-direction: column;
-        overflow: hidden;
-    }
+    .compounds-panel { flex: 1; background: #fff; border-radius: 8px; border: 1px solid #ddd; box-shadow: 0 2px 8px rgba(0,0,0,0.03); padding: 15px; display: flex; flex-direction: column; overflow: hidden; }
     .panel-title { font-size: 14px; font-weight: bold; color: #7f8c8d; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; display: flex; justify-content: space-between; align-items: center;}
-    
-    .compounds-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-        gap: 10px;
-        overflow-y: auto;
-        padding-right: 5px;
-    }
-    
-    .compound-card {
-        background: #f8f9fa;
-        border: 1px solid #eee;
-        border-radius: 6px;
-        padding: 10px;
-        cursor: pointer;
-        transition: all 0.2s;
-        text-align: center;
-    }
+    .compounds-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; overflow-y: auto; padding-right: 5px; }
+    .compound-card { background: #f8f9fa; border: 1px solid #eee; border-radius: 6px; padding: 10px; cursor: pointer; transition: all 0.2s; text-align: center; }
     .compound-card:hover { transform: translateY(-2px); border-color: var(--accent-color); box-shadow: 0 3px 8px rgba(0,0,0,0.05); }
     .comp-formula { font-family: 'Segoe UI', sans-serif; font-weight: bold; color: var(--text-primary); font-size: 15px; }
     .comp-name { font-size: 12px; color: #666; margin-top: 3px; }
@@ -209,6 +145,14 @@
                         <tr><td class="label"><div class="bilingual-label"><span class="label-cn">电子层</span><span class="label-en">Shells</span></div></td><td class="value" id="inf-shells"></td></tr>
                         <tr><td class="label"><div class="bilingual-label"><span class="label-cn">电负性</span><span class="label-en">Electronegativity</span></div></td><td class="value" id="inf-neg"></td></tr>
                         <tr><td class="label"><div class="bilingual-label"><span class="label-cn">电子亲和能</span><span class="label-en">Electron Affinity</span></div></td><td class="value" id="inf-affinity"></td></tr>
+                        
+                        <tr>
+                            <td class="label" colspan="2">
+                                <div class="bilingual-label" style="margin-bottom:5px;"><span class="label-cn">电离能</span><span class="label-en">Ionization Energies (kJ/mol)</span></div>
+                                <div id="inf-ionization" style="font-family:Consolas; font-size:13px; color:#555; background:#eee; padding:8px; border-radius:4px; word-break:break-all;"></div>
+                            </td>
+                        </tr>
+                        
                     </table>
                 </div>
 
@@ -216,6 +160,10 @@
                     <table class="prop-table">
                         <tr><td class="label"><div class="bilingual-label"><span class="label-cn">发现者</span><span class="label-en">Discovered By</span></div></td><td class="value" id="inf-discovered"></td></tr>
                         <tr><td class="label"><div class="bilingual-label"><span class="label-cn">命名者</span><span class="label-en">Named By</span></div></td><td class="value" id="inf-named"></td></tr>
+                        <tr>
+                            <td class="label"><div class="bilingual-label"><span class="label-cn">维基百科</span><span class="label-en">Source</span></div></td>
+                            <td class="value"><a id="inf-source" href="#" target="_blank" style="color:var(--accent-color); text-decoration:none;">Wikipedia ↗</a></td>
+                        </tr>
                     </table>
                 </div>
 
@@ -270,7 +218,6 @@
 
         init: async function() {
             try {
-                // ★★★ 核心：加载4个文件 ★★★
                 const [elRes, structRes, impRes, compRes] = await Promise.all([
                     fetch('data/elements.json'),
                     fetch('data/structures.json').catch(()=>({ok:false})),
@@ -283,7 +230,7 @@
                 
                 if(structRes.ok) this.structures = await structRes.json();
                 if(impRes.ok) this.implantData = await impRes.json(); 
-                if(compRes.ok) this.compounds = await compRes.json(); // 存入 compounds
+                if(compRes.ok) this.compounds = await compRes.json(); 
 
                 this.buildGridDOM();
             } catch (e) {
@@ -350,39 +297,44 @@
             const sec = document.getElementById('detail-section'); sec.style.display = 'flex';
             setTimeout(() => sec.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
 
-            document.getElementById('inf-sym').innerText = el.symbol; 
-            document.getElementById('inf-name').innerText = el.name;
-            document.getElementById('inf-cn-name').innerText = cnMap[el.name] || el.name; 
-            document.getElementById('inf-num').innerText = el.number; 
+            // Safe Setter Helper (避免空指针报错)
+            const setTxt = (id, val) => { const node = document.getElementById(id); if(node) node.innerText = val; };
+            const setHTML = (id, val) => { const node = document.getElementById(id); if(node) node.innerHTML = val; };
+
+            // Header
+            setTxt('inf-sym', el.symbol); 
+            setTxt('inf-name', el.name);
+            setTxt('inf-cn-name', cnMap[el.name] || el.name); 
+            setTxt('inf-num', el.number); 
 
             this.drawBohr(el);
-            document.getElementById('inf-summary').innerText = el.summary || "No description.";
-            document.getElementById('inf-appearance').innerText = el.appearance || "N/A";
-            document.getElementById('inf-category').innerText = el.category ? el.category.toUpperCase() : "N/A";
-            document.getElementById('inf-phase').innerText = el.phase || "N/A";
-            document.getElementById('inf-period').innerText = el.period || "-";
-            document.getElementById('inf-group').innerText = el.group || "-";
+            setTxt('inf-summary', el.summary || "No description.");
+            setTxt('inf-appearance', el.appearance || "N/A");
+            setTxt('inf-category', el.category ? el.category.toUpperCase() : "N/A");
+            setTxt('inf-phase', el.phase || "N/A");
+            setTxt('inf-period', el.period || "-");
+            setTxt('inf-group', el.group || "-");
 
-            document.getElementById('inf-mass').innerText = el.atomic_mass;
-            document.getElementById('inf-density').innerText = el.density ? el.density + " g/cm³" : "N/A";
-            document.getElementById('inf-melt').innerText = el.melt ? el.melt + " K" : "N/A";
-            document.getElementById('inf-boil').innerText = el.boil ? el.boil + " K" : "N/A";
-            document.getElementById('inf-heat').innerText = el.molar_heat ? el.molar_heat + " J/(mol·K)" : "N/A";
+            setTxt('inf-mass', el.atomic_mass);
+            setTxt('inf-density', el.density ? el.density + " g/cm³" : "N/A");
+            setTxt('inf-melt', el.melt ? el.melt + " K" : "N/A");
+            setTxt('inf-boil', el.boil ? el.boil + " K" : "N/A");
+            setTxt('inf-heat', el.molar_heat ? el.molar_heat + " J/(mol·K)" : "N/A");
 
             const fmt = (el.electron_configuration || "").replace(/(\d+)([spdf])/g, '$1 $2').replace(/([spdf])(\d+)/g, '$1<sup>$2</sup>');
-            document.getElementById('inf-config').innerHTML = fmt;
-            document.getElementById('inf-shells').innerText = el.shells ? el.shells.join(', ') : "N/A";
-            document.getElementById('inf-neg').innerText = el.electronegativity_pauling || "N/A";
-            document.getElementById('inf-affinity').innerText = el.electron_affinity ? el.electron_affinity + " kJ/mol" : "N/A";
+            setHTML('inf-config', fmt);
+            setTxt('inf-shells', el.shells ? el.shells.join(', ') : "N/A");
+            setTxt('inf-neg', el.electronegativity_pauling || "N/A");
+            setTxt('inf-affinity', el.electron_affinity ? el.electron_affinity + " kJ/mol" : "N/A");
+            setTxt('inf-ionization', el.ionization_energies ? el.ionization_energies.join(', ') : "N/A");
 
-            document.getElementById('inf-discovered').innerText = el.discovered_by || "Unknown";
-            document.getElementById('inf-named').innerText = el.named_by || "N/A";
+            setTxt('inf-discovered', el.discovered_by || "Unknown");
+            setTxt('inf-named', el.named_by || "N/A");
             const srcLink = document.getElementById('inf-source');
-            if(el.source) { srcLink.href = el.source; srcLink.style.display = "inline"; } else { srcLink.style.display = "none"; }
+            if(srcLink) { if(el.source) { srcLink.href = el.source; srcLink.style.display = "inline"; } else { srcLink.style.display = "none"; } }
 
             this.loadImplantData(el);
             this.setupStructure(el);
-            // ★★★ 加载新文件里的化合物 ★★★
             this.loadCompounds(el);
 
             if(!document.querySelector('.tab-pane.active')) this.switchTab('overview');
@@ -391,33 +343,29 @@
         loadCompounds: function(el) {
             const container = document.getElementById('compounds-list');
             container.innerHTML = '';
-            
-            // 从 this.compounds 查找 (加载自 json)
             const list = this.compounds[el.symbol];
-            
             if (!list || list.length === 0) {
                 container.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:#ccc; padding:20px; font-size:13px;">No common compounds data available</div>';
                 return;
             }
-
             list.forEach(item => {
-                const card = document.createElement('div');
-                card.className = 'compound-card';
+                const card = document.createElement('div'); card.className = 'compound-card';
                 const fmtFormula = item[0].replace(/(\d+)/g, '<sub>$1</sub>');
                 card.innerHTML = `<div class="comp-formula">${fmtFormula}</div><div class="comp-name">${item[1]}</div>`;
-                card.onclick = () => { alert(`Compound selected: ${item[1]} (${item[0]})\n(Detailed view not implemented yet)`); };
+                card.onclick = () => { alert(`Compound selected: ${item[1]}\n(Preview only)`); };
                 container.appendChild(card);
             });
         },
 
         loadImplantData: function(el) {
             const data = this.implantData[el.number] || {};
+            const setTxt = (id, val) => { const node = document.getElementById(id); if(node) node.innerHTML = val; }; // InnerHTML for sub tags
             if(el.density && el.atomic_mass) {
                 const ad = (el.density * 6.022e23) / el.atomic_mass;
-                document.getElementById('imp-density').innerText = (ad/1e22).toFixed(3) + "e22 cm⁻³";
-            } else { document.getElementById('imp-density').innerText = "N/A"; }
-            document.getElementById('imp-ed').innerHTML = data.ed ? `${data.ed} eV` : "N/A";
-            document.getElementById('imp-es').innerHTML = data.es ? `${data.es} eV` : "N/A";
+                setTxt('imp-density', (ad/1e22).toFixed(3) + "e22 cm⁻³");
+            } else { setTxt('imp-density', "N/A"); }
+            setTxt('imp-ed', data.ed ? `${data.ed} eV` : "N/A");
+            setTxt('imp-es', data.es ? `${data.es} eV` : "N/A");
         },
 
         drawBohr: function(el) {
@@ -442,7 +390,9 @@
                 if(entry.default) finalVars.push({ name: "Standard", file: entry.default });
                 if(entry.allotropes) entry.allotropes.forEach(allo => { if(allo.file !== entry.default) finalVars.push(allo); });
             } else { finalVars.push({ name: "Standard", file: `${el.number}.cif` }); }
-            if(finalVars.length === 0) { this.updateStatus("No Structure Data"); return; }
+            
+            if(finalVars.length === 0) { return; } // Should not happen with fallback
+            
             finalVars.forEach((v, i) => {
                 const btn = document.createElement('button'); btn.className = 'variant-btn'; btn.innerText = v.name;
                 btn.onclick = () => { document.querySelectorAll('.variant-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); this.loadCif(v.file); };
