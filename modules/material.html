@@ -13,8 +13,6 @@
         color: var(--text-primary);
         display: flex;
         flex-direction: column;
-        /* 防止双重滚动条 */
-        height: auto;
         padding-bottom: 50px;
     }
 
@@ -24,101 +22,91 @@
         background: #f8f9fa;
         border-bottom: 1px solid var(--border-color);
         display: flex;
-        gap: 10px;
+        gap: 8px;
         align-items: center;
         flex-wrap: wrap;
-        position: sticky; /* 吸顶效果 */
-        top: 0;
-        z-index: 200;
     }
     .mode-btn {
-        padding: 4px 10px; font-size: 12px; border: 1px solid #ccc; background: #fff; border-radius: 4px; cursor: pointer; transition: 0.2s;
+        padding: 5px 12px; font-size: 13px; border: 1px solid #ccc; background: #fff; border-radius: 4px; cursor: pointer; transition: 0.2s;
     }
     .mode-btn:hover { background: #eee; }
     .mode-btn.active { background: var(--text-primary); color: white; border-color: var(--text-primary); }
 
-    /* === 周期表容器 (解决了滚动问题) === */
+    /* === 周期表 (自适应布局) === */
     .pt-container { 
         padding: 10px; 
         width: 100%; 
         box-sizing: border-box; 
-        display: flex;
-        justify-content: center;
+        display: flex; justify-content: center;
     }
-    
     .pt-grid {
         display: grid;
-        /* 核心修改：让格子自动缩放，填满屏幕但不溢出 */
+        /* 核心：minmax(0, 1fr) 保证格子在小屏下自动缩小，不撑破屏幕 */
         grid-template-columns: repeat(18, minmax(0, 1fr)); 
         gap: 2px;
         width: 100%;
-        max-width: 1300px; /*在大屏上限制最大宽，防止太扁*/
+        max-width: 1200px; /* 限制最大宽度，防止在大屏太扁 */
     }
-
     .pt-cell {
         aspect-ratio: 1; 
         border: 1px solid var(--border-color); 
-        position: relative; 
-        cursor: pointer; 
-        transition: transform 0.2s, background-color 0.3s ease; /* 增加颜色过渡 */
-        background: #fff; 
-        display: flex; 
-        flex-direction: column; 
-        justify-content: space-between;
-        padding: 2px;
-        overflow: hidden;
+        position: relative; cursor: pointer; 
+        background: #fff; display: flex; flex-direction: column; justify-content: space-between;
+        padding: 2px; overflow: hidden;
+        transition: transform 0.2s, background-color 0.3s;
     }
-    
-    .pt-cell:hover { transform: scale(1.5); z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.2); border-color: var(--accent-color); }
+    .pt-cell:hover { transform: scale(1.5); z-index: 100; box-shadow: 0 4px 15px rgba(0,0,0,0.2); border-color: var(--accent-color); }
     .pt-cell.active { border: 2px solid var(--accent-color); z-index: 90; transform: scale(1.1); }
 
-    /* 字体自适应 */
-    .pt-cell .num { font-size: clamp(8px, 1vw, 10px); color: #999; line-height: 1;}
-    .pt-cell .sym { font-size: clamp(10px, 2.5vw, 16px); font-weight: 700; text-align: center; color: var(--text-primary); }
+    /* 字体自适应 Clamp */
+    .pt-cell .num { font-size: clamp(8px, 1vw, 10px); color: #999; line-height: 1; }
+    .pt-cell .sym { font-size: clamp(10px, 2.2vw, 18px); font-weight: 700; text-align: center; color: var(--text-primary); margin-top: -2px;}
     .pt-cell .val { font-size: clamp(7px, 0.8vw, 9px); text-align: right; color: #666; white-space: nowrap; }
 
-    /* === 详情面板 === */
+    /* === 详情区 === */
     #detail-section {
-        display: none;
-        padding: 20px;
-        background: #fafafa;
+        display: none; padding: 20px; background: #fafafa;
         border-top: 1px solid var(--border-color);
-        gap: 20px;
-        flex-wrap: wrap;
+        gap: 20px; flex-wrap: wrap;
         animation: slideUp 0.3s ease-out;
     }
     @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
-    .info-column { flex: 1 1 300px; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+    .info-column { flex: 1 1 320px; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
     
-    /* 2D图 */
-    #bohr-container { width: 100%; height: 220px; margin: 10px 0; display: flex; justify-content: center; }
-    #bohr-svg { width: 100%; height: 100%; }
+    #bohr-container { width: 100%; height: 200px; margin: 10px 0; display: flex; justify-content: center; }
+    #bohr-svg { width: 100%; height: 100%; overflow: visible; }
     .electron-shell { fill: none; stroke: #dfe6e9; stroke-width: 1; }
     .electron-dot { fill: var(--accent-color); }
     .nucleus { fill: var(--text-primary); }
 
-    /* 3D 视图 */
-    .viewer-column { flex: 1 1 400px; display: flex; flex-direction: column; gap: 10px; }
+    .viewer-column { flex: 1 1 450px; display: flex; flex-direction: column; gap: 10px; }
     .viewer-box {
         flex: 1; height: 450px; background: #000; border-radius: 8px; 
         overflow: hidden; position: relative; border: 1px solid #333;
     }
     #mol-canvas { width: 100%; height: 100%; }
-    .loading-hint { position: absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:#aaa; font-size:12px; pointer-events:none; }
     
-    .structure-selector { display:flex; gap:8px; flex-wrap:wrap; padding: 5px 0;}
-    .variant-btn { padding: 4px 10px; border-radius:12px; border:1px solid #ccc; background:#fff; cursor:pointer; font-size:11px;}
-    .variant-btn.active { background:var(--accent-color); color:white; border-color:var(--accent-color); }
+    /* 错误/加载提示 */
+    .status-overlay { 
+        position: absolute; top:0; left:0; width:100%; height:100%; 
+        display: flex; justify-content: center; align-items: center; flex-direction: column;
+        background: rgba(0,0,0,0.7); color: #ccc; font-size: 13px; text-align: center;
+        z-index: 10; pointer-events: none;
+    }
 
+    .structure-selector { display:flex; gap:8px; flex-wrap:wrap; min-height: 30px;}
+    .variant-btn { padding: 4px 12px; border-radius:15px; border:1px solid #ccc; background:#fff; cursor:pointer; font-size:12px; transition:0.2s;}
+    .variant-btn:hover { border-color: var(--accent-color); color: var(--accent-color); }
+    .variant-btn.active { background:var(--accent-color); color:white; border-color:var(--accent-color); }
 </style>
 
 <div id="material-app">
     <div class="control-bar">
-        <span style="font-size:12px; font-weight:bold; color:#777;">VIEW MODE:</span>
+        <span style="font-size:12px; font-weight:bold; color:#777;">HEATMAP:</span>
         <button class="mode-btn active" onclick="app.setHeatmap('none')">Standard</button>
         <button class="mode-btn" onclick="app.setHeatmap('atomic_mass')">Mass</button>
-        <button class="mode-btn" onclick="app.setHeatmap('melt')">Melting Point</button>
+        <button class="mode-btn" onclick="app.setHeatmap('melt')">Melting</button>
         <button class="mode-btn" onclick="app.setHeatmap('electronegativity_pauling')">Electronegativity</button>
     </div>
 
@@ -140,8 +128,8 @@
                 <svg id="bohr-svg" viewBox="-100 -100 200 200"></svg>
             </div>
             
-            <div style="font-size:13px; line-height:1.8;">
-                <div><b>Mass:</b> <span id="inf-mass">55.845</span></div>
+            <div style="font-size:13px; line-height:2; color:#555;">
+                <div><b>Mass:</b> <span id="inf-mass">55.85</span></div>
                 <div><b>Config:</b> <span id="inf-config"></span></div>
                 <div><b>Melting:</b> <span id="inf-melt">1811 K</span></div>
             </div>
@@ -151,7 +139,7 @@
             <div class="structure-selector" id="variant-list"></div>
             <div class="viewer-box">
                 <div id="mol-canvas"></div>
-                <div id="viewer-msg" class="loading-hint">Select an element</div>
+                <div id="viewer-status" class="status-overlay">Select an element</div>
             </div>
             <div style="text-align:right;">
                 <button class="mode-btn" onclick="app.resetCam()">Reset Camera</button>
@@ -170,7 +158,7 @@
 
         init: async function() {
             try {
-                // 加载数据 (路径是相对于 index.html 的)
+                // 加载数据
                 const [elRes, structRes] = await Promise.all([
                     fetch('data/elements.json'),
                     fetch('data/structures.json').catch(()=>({ok:false}))
@@ -180,7 +168,6 @@
                 this.elements = await elRes.json();
                 if(structRes.ok) this.structures = await structRes.json();
 
-                // 首次构建 DOM
                 this.buildGridDOM();
             } catch (e) {
                 console.error(e);
@@ -188,7 +175,6 @@
             }
         },
 
-        // 1. 构建 DOM (只运行一次)
         buildGridDOM: function() {
             const grid = document.getElementById('pt-grid');
             grid.innerHTML = '';
@@ -198,44 +184,36 @@
                 cell.className = 'pt-cell';
                 cell.style.gridColumn = el.xpos;
                 cell.style.gridRow = el.ypos;
-                cell.dataset.num = el.number; // 绑定原子序数，方便查找
+                cell.dataset.num = el.number;
                 
                 cell.innerHTML = `
                     <span class="num">${el.number}</span>
                     <span class="sym">${el.symbol}</span>
                     <span class="val"></span>
                 `;
-                
                 cell.onclick = () => {
                     document.querySelectorAll('.pt-cell').forEach(c => c.classList.remove('active'));
                     cell.classList.add('active');
                     this.loadDetail(el);
                 };
-
                 grid.appendChild(cell);
             });
-            
-            // 初始化显示
             this.updateGridVisuals();
         },
 
-        // 2. 更新视觉效果 (平滑切换数据，不重绘DOM)
         setHeatmap: function(mode) {
             this.heatmapMode = mode;
-            // 更新按钮状态
             document.querySelectorAll('.control-bar .mode-btn').forEach(btn => {
                 const txt = btn.innerText.toLowerCase();
                 const m = mode.toLowerCase();
                 if(m === 'none') btn.classList.toggle('active', txt.includes('standard'));
                 else btn.classList.toggle('active', m.includes(txt.split(' ')[0]));
             });
-            
             this.updateGridVisuals();
         },
 
         updateGridVisuals: function() {
             let minVal = Infinity, maxVal = -Infinity;
-            // 计算极值
             if(this.heatmapMode !== 'none') {
                 this.elements.elements.forEach(el => {
                     const val = el[this.heatmapMode];
@@ -246,7 +224,6 @@
                 });
             }
 
-            // 遍历更新 DOM
             const cells = document.querySelectorAll('.pt-cell');
             cells.forEach(cell => {
                 const num = parseInt(cell.dataset.num);
@@ -254,21 +231,17 @@
                 if(!el) return;
 
                 const valSpan = cell.querySelector('.val');
-                
                 if(this.heatmapMode === 'none') {
-                    // 标准模式
                     valSpan.innerText = el.atomic_mass.toFixed(2);
                     cell.style.backgroundColor = '#fff';
                     cell.querySelector('.sym').style.color = '#2c3e50';
                 } else {
-                    // 热力图模式
                     const val = el[this.heatmapMode];
                     if(typeof val === 'number') {
                         valSpan.innerText = val;
-                        // 归一化颜色 (蓝 -> 红)
                         const ratio = (val - minVal) / (maxVal - minVal);
                         const hue = 240 - (ratio * 240); 
-                        cell.style.backgroundColor = `hsla(${hue}, 85%, 65%, 0.4)`; // 0.4透明度保证文字可读
+                        cell.style.backgroundColor = `hsla(${hue}, 85%, 65%, 0.4)`;
                     } else {
                         valSpan.innerText = '-';
                         cell.style.backgroundColor = '#eee';
@@ -280,10 +253,8 @@
         loadDetail: function(el) {
             const sec = document.getElementById('detail-section');
             sec.style.display = 'flex';
-            // 稍后再滚，体验更好
             setTimeout(() => sec.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
 
-            // 填充文本
             document.getElementById('inf-sym').innerText = el.symbol;
             document.getElementById('inf-name').innerText = el.name;
             document.getElementById('inf-num').innerText = el.number;
@@ -293,35 +264,28 @@
             const fmt = (el.electron_configuration || "").replace(/(\d+)([spdf])/g, '$1 $2').replace(/([spdf])(\d+)/g, '$1<sup>$2</sup>');
             document.getElementById('inf-config').innerHTML = fmt;
 
-            // 画 2D 图
             this.drawBohr(el);
-            
-            // 准备 3D
             this.setupStructure(el);
         },
 
         drawBohr: function(el) {
             const svg = document.getElementById('bohr-svg');
             svg.innerHTML = '';
-            // 简单画法：每层 2n^2
             let remaining = el.number;
             const shells = [];
             for(let n=1; n<=7; n++) {
                 const cap = 2*n*n;
-                // 模拟简单排布
                 const take = Math.min(remaining, (n==1?2:(n==2?8:(n==3?18:32))));
                 if(take>0) { shells.push(take); remaining -= take; } else break;
             }
-            // 如果 JSON 有 shells 字段最好
             const realShells = el.shells || shells;
             
-            // 绘制
             const nucleus = document.createElementNS("http://www.w3.org/2000/svg", "circle");
             nucleus.setAttribute("cx", 0); nucleus.setAttribute("cy", 0); nucleus.setAttribute("r", 8); nucleus.setAttribute("class", "nucleus");
             svg.appendChild(nucleus);
 
             realShells.forEach((count, i) => {
-                const r = 20 + i*12;
+                const r = 20 + i*13;
                 const ring = document.createElementNS("http://www.w3.org/2000/svg", "circle");
                 ring.setAttribute("r", r); ring.setAttribute("class", "electron-shell");
                 svg.appendChild(ring);
@@ -329,26 +293,48 @@
                     const ang = (j/count)*Math.PI*2;
                     const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
                     dot.setAttribute("cx", Math.cos(ang)*r); dot.setAttribute("cy", Math.sin(ang)*r);
-                    dot.setAttribute("r", 2); dot.setAttribute("class", "electron-dot");
+                    dot.setAttribute("r", 2.5); dot.setAttribute("class", "electron-dot");
                     svg.appendChild(dot);
                 }
             });
         },
 
+        // ★★★ 修复：智能按钮去重 + 过滤 ★★★
         setupStructure: function(el) {
             const list = document.getElementById('variant-list');
             list.innerHTML = '';
             
-            let vars = [];
+            let finalVars = [];
             const entry = this.structures[el.number];
+
             if(entry) {
-                vars = entry.allotropes || [];
-                if(entry.default) vars.unshift({name: "Standard", file: entry.default});
+                // 1. 添加默认 (Standard)
+                if(entry.default) {
+                    finalVars.push({ name: "Standard", file: entry.default });
+                }
+                
+                // 2. 添加变体 (Allotropes)，但排除掉文件名和默认一样的
+                if(entry.allotropes) {
+                    entry.allotropes.forEach(allo => {
+                        // 只有当文件名不一样时，才添加，防止重复
+                        if(allo.file !== entry.default) {
+                            finalVars.push(allo);
+                        }
+                    });
+                }
             } else {
-                vars.push({name: "Standard", file: `${el.number}.cif`});
+                // 没账本，盲猜
+                finalVars.push({ name: "Standard", file: `${el.number}.cif` });
             }
 
-            vars.forEach((v, i) => {
+            // 生成按钮
+            if(finalVars.length === 0) {
+                 list.innerHTML = '<span style="font-size:12px;color:#999">No 3D data</span>';
+                 this.updateStatus("No Structure Data");
+                 return;
+            }
+
+            finalVars.forEach((v, i) => {
                 const btn = document.createElement('button');
                 btn.className = 'variant-btn';
                 btn.innerText = v.name;
@@ -363,24 +349,28 @@
         },
 
         loadCif: function(file) {
-            const msg = document.getElementById('viewer-msg');
-            msg.innerText = "Loading...";
+            const status = document.getElementById('viewer-status');
+            status.style.display = 'flex';
+            status.innerText = "Downloading Structure...";
             
             if(!this.viewer) {
-                // 初始化 3Dmol
                 this.viewer = $3Dmol.createViewer("mol-canvas", { backgroundColor: "#000" });
             }
 
-            // ★★★ 核心路径修复 ★★★
-            // 必须是 data/structures/xxx.cif
+            // 构建路径
             const path = `data/structures/${file}`;
             
+            // ★★★ 调试：打印出它到底在请求哪个网址 ★★★
+            console.log("Requesting CIF:", path);
+
             fetch(path)
                 .then(r => {
-                    if(!r.ok) throw new Error("File not found");
+                    if(!r.ok) throw new Error(`HTTP ${r.status}`);
                     return r.text();
                 })
                 .then(cif => {
+                    if(cif.length < 50) throw new Error("File too small (Invalid)");
+                    
                     this.viewer.clear();
                     const m = this.viewer.addModel(cif, "cif");
                     this.viewer.addUnitCell(m, {boxAxes:true, color:'white', opacity:0.3});
@@ -388,18 +378,26 @@
                     this.viewer.replicateUnitCell(2,2,2, m);
                     this.viewer.zoomTo();
                     this.viewer.render();
-                    msg.innerText = "";
+                    status.style.display = 'none';
                 })
                 .catch(e => {
                     console.error("CIF Load Error:", e);
-                    this.viewer.clear();
-                    this.viewer.render(); // 清空画面
-                    msg.innerText = "Data unavailable for this structure";
+                    this.viewer.clear(); 
+                    this.viewer.render();
+                    // 在屏幕上直接显示报错路径，方便你截图
+                    status.innerHTML = `<span style="color:red">Error Loading File</span><br><br><small>${path}</small><br><small>${e.message}</small>`;
+                    status.style.display = 'flex';
                 });
         },
         
         resetCam: function() {
             if(this.viewer) this.viewer.zoomTo();
+        },
+
+        updateStatus: function(msg) {
+             const status = document.getElementById('viewer-status');
+             status.innerText = msg;
+             status.style.display = 'flex';
         }
     };
     
