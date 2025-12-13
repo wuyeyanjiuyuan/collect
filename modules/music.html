@@ -1,189 +1,184 @@
-<script src="https://cdn.jsdelivr.net/npm/abcjs@6.2.2/dist/abcjs-basic-min.js"></script>
-
 <div id="music-app">
     <div class="music-header">
-        <div class="header-left">
-            <div class="app-icon">🎹</div>
-            <div>
-                <h2>全键盘钢琴教学</h2>
-                <span class="status-text" id="status-display">等待乐谱加载...</span>
+        <div class="header-main">
+            <div class="app-title">
+                <span class="icon">🎹</span>
+                <div class="text">
+                    <h2>钢琴教学助手</h2>
+                    <span class="status" id="status-display">初始化中...</span>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <select id="song-select" onchange="MusicApp.loadSong(this.value)">
+                    <option value="" disabled selected>正在读取乐谱...</option>
+                </select>
+
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="MusicApp.play()" id="btn-play">▶ 演奏</button>
+                    <button class="btn btn-danger" onclick="MusicApp.stop()">⏹ 停止</button>
+                </div>
             </div>
         </div>
-        
-        <div class="control-panel">
-            <select id="song-select" onchange="MusicApp.loadSong(this.value)">
-                <option value="" disabled selected>正在读取乐谱库...</option>
-            </select>
 
-            <div class="divider"></div>
-
-            <button class="btn btn-play" onclick="MusicApp.play()" id="btn-play">▶ 开始演奏</button>
-            <button class="btn btn-stop" onclick="MusicApp.stop()">⏹ 停止</button>
-
-            <div class="speed-box">
-                <label>速度</label>
-                <input type="range" id="tempo-slider" min="30" max="180" value="90" oninput="MusicApp.setTempo(this.value)">
+        <div class="header-sub">
+            <div class="speed-control">
+                <span>速度</span>
+                <input type="range" id="tempo-slider" min="30" max="180" value="90" oninput="MusicApp.updateTempo(this.value)">
                 <span id="tempo-val">90 BPM</span>
             </div>
         </div>
     </div>
 
     <div class="sheet-music-wrapper">
-        <div id="notation-container" class="notation-container">
-            <div id="notation-paper"></div>
-            <div id="cursor" class="cursor"></div>
+        <div id="notation-paper"></div>
+        <div id="cursor"></div>
+        <div id="empty-state" class="empty-state">
+            👈 请在上方选择一首曲子开始
         </div>
     </div>
 
-    <div class="piano-section">
-        <div class="piano-scroll-container" id="piano-scroll">
+    <div class="piano-container">
+        <div class="piano-info">
+            <span>💡 提示：按住 Shift + 滚轮可左右移动键盘</span>
+            <button onclick="MusicApp.scrollToCenter()">🎯 回到中央 C</button>
+        </div>
+        
+        <div class="piano-scroll-view" id="piano-scroll">
             <div id="piano-keyboard" class="piano">
                 </div>
-        </div>
-        <div class="piano-controls">
-            <button class="scroll-btn" onclick="MusicApp.scrollPiano('left')">⬅️ 低音区</button>
-            <span class="piano-hint">按住 Shift + 滚轮可横向滚动钢琴</span>
-            <button class="scroll-btn" onclick="MusicApp.scrollPiano('right')">高音区 ➡️</button>
         </div>
     </div>
 </div>
 
 <style>
-    /* === 基础样式 === */
+    /* === 布局重置 === */
     #music-app {
-        --primary: #6c5ce7;
-        --bg-color: #f8f9fa;
-        font-family: 'Segoe UI', sans-serif;
-        background: var(--bg-color);
+        --primary: #4a90e2;
+        --bg: #f5f7fa;
+        background: var(--bg);
         padding: 20px;
-        border-radius: 12px;
+        font-family: 'Segoe UI', sans-serif;
+        color: #333;
+        /* 移除 max-height，允许页面自然滚动 */
+        min-height: 100vh;
         display: flex;
         flex-direction: column;
-        gap: 15px;
-        /* 防止页面本身滚动，只让钢琴滚 */
-        max-height: 90vh; 
-        overflow: hidden; 
+        gap: 20px;
     }
 
     /* 顶部栏 */
     .music-header {
-        background: #fff; padding: 12px 20px; border-radius: 10px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
+        background: white;
+        padding: 15px;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
     }
-    .header-left { display: flex; align-items: center; gap: 12px; }
-    .app-icon { font-size: 24px; background: #eee; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
-    .status-text { font-size: 12px; color: #888; display: block; }
-    .control-panel { display: flex; align-items: center; gap: 10px; }
-    #song-select { padding: 6px; border-radius: 4px; border: 1px solid #ddd; max-width: 200px;}
-    .divider { width: 1px; height: 25px; background: #ddd; }
-    .btn { border: none; padding: 8px 16px; border-radius: 6px; color: white; cursor: pointer; font-weight: bold; font-size: 13px; }
-    .btn-play { background: #00b894; } .btn-stop { background: #ff7675; }
-    .speed-box { display: flex; align-items: center; gap: 5px; font-size: 12px; background: #eee; padding: 4px 10px; border-radius: 20px; }
+    .header-main { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 10px; }
+    .app-title { display: flex; align-items: center; gap: 10px; }
+    .app-title .icon { font-size: 28px; background: #eef2f7; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; border-radius: 12px; }
+    .app-title h2 { margin: 0; font-size: 20px; }
+    .status { font-size: 12px; color: #888; }
+    
+    .controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    #song-select { padding: 8px; border: 1px solid #ddd; border-radius: 6px; min-width: 200px; }
+    .btn { border: none; padding: 8px 20px; border-radius: 6px; color: white; cursor: pointer; font-weight: bold; transition: 0.2s; }
+    .btn-primary { background: var(--primary); }
+    .btn-primary:hover { background: #357abd; }
+    .btn-danger { background: #ff5b5b; }
+    .btn-group { display: flex; gap: 5px; }
 
-    /* === 乐谱区域 === */
+    .header-sub { border-top: 1px solid #eee; padding-top: 10px; }
+    .speed-control { display: flex; align-items: center; gap: 10px; font-size: 13px; color: #666; }
+    input[type=range] { accent-color: var(--primary); }
+
+    /* === 乐谱区域 (关键修复) === */
     .sheet-music-wrapper {
-        background: #fff; border-radius: 10px; padding: 10px;
-        flex: 1; overflow-y: auto; position: relative;
-        display: flex; justify-content: center;
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        /* 强制最小高度，防止看不见 */
+        min-height: 250px; 
+        position: relative;
+        overflow-x: auto;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start; /* 顶部对齐 */
     }
-    .notation-container { position: relative; display: inline-block; }
     
-    /* 进度条光标 */
+    /* 让 abcjs 生成的 SVG 自适应 */
+    #notation-paper svg { width: 100% !important; max-width: 1000px; height: auto; }
+    
     .cursor {
-        position: absolute;
-        top: 0; left: 0;
-        width: 2px; height: 100%;
-        background: rgba(255, 0, 0, 0.6);
-        box-shadow: 0 0 4px red;
-        z-index: 10;
-        pointer-events: none; /* 让点击穿透到乐谱上 */
-        display: none; /* 默认隐藏 */
-        transition: left 0.1s linear; /* 顺滑移动 */
+        position: absolute; width: 2px; background: rgba(255,0,0,0.7); height: 100px; top: 0; left: 0; z-index: 10; display: none; box-shadow: 0 0 5px red; transition: left 0.1s linear;
     }
+    .empty-state { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #bbb; font-size: 18px; pointer-events: none; }
 
-    /* 点击乐谱时的样式 */
-    svg { cursor: pointer; } 
-    .abcjs-note_selected { fill: var(--primary); }
-
-    /* === 钢琴区域 (重点修改) === */
-    .piano-section {
-        background: #2d3436;
-        padding: 10px 0;
-        border-radius: 8px;
-        box-shadow: 0 -5px 20px rgba(0,0,0,0.2);
+    /* === 钢琴区域 === */
+    .piano-container {
+        background: #2c3e50;
+        padding: 15px 0;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
     }
+    .piano-info { text-align: center; color: #95a5a6; font-size: 12px; margin-bottom: 10px; display: flex; justify-content: center; gap: 20px; align-items: center; }
+    .piano-info button { background: rgba(255,255,255,0.1); border: none; color: white; padding: 2px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; }
 
-    .piano-scroll-container {
+    .piano-scroll-view {
         width: 100%;
-        overflow-x: auto; /* 允许横向滚动 */
-        padding-bottom: 5px;
+        overflow-x: auto;
+        /* 隐藏默认滚动条但允许滚动 */
         scrollbar-width: thin;
-        scrollbar-color: #636e72 #2d3436;
-        text-align: center; /* 居中对齐 */
+        scrollbar-color: #555 #2c3e50;
+        text-align: left; /* 必须左对齐，否则绝对定位会乱 */
+        padding-bottom: 10px;
     }
-    
-    /* 钢琴本体容器 */
+
     .piano {
         position: relative;
-        height: 140px;
-        /* 88键大概需要 52个白键 * 28px = 1456px */
-        width: 1460px; 
-        margin: 0 auto;
-        background: #222;
-        user-select: none;
+        height: 160px;
+        width: 1980px; /* 88键 * 宽度预估 */
+        margin: 0 auto; /* 居中 */
+        background: #1a1a1a;
     }
 
+    /* 琴键样式优化 */
     .key {
-        position: absolute;
-        top: 0;
-        border-radius: 0 0 4px 4px;
-        cursor: pointer;
-        transition: transform 0.05s ease, background 0.1s;
-        box-sizing: border-box;
-    }
-
-    /* 白键 */
-    .key.white {
-        height: 140px;
-        width: 28px; /* 稍微窄一点以适应屏幕 */
-        background: #fff;
-        border: 1px solid #ccc;
-        border-top: none;
-        z-index: 1;
-    }
-    /* 白键按下效果：更有深度的阴影 */
-    .key.white.active {
-        background: #dfe6e9; /* 不变太红，保持真实感 */
-        background: linear-gradient(to bottom, #fff 0%, #b2bec3 100%);
-        transform: translateY(3px) rotateX(-5deg); /* 3D 下压感 */
-        box-shadow: inset 0 -5px 5px rgba(0,0,0,0.2);
-        border-bottom: 4px solid #b2bec3;
-    }
-
-    /* 黑键 */
-    .key.black {
-        height: 90px;
-        width: 16px; /* 黑键宽度 */
-        background: #000;
-        z-index: 2;
-        box-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-        /* 黑键按下 */
-    }
-    .key.black.active {
-        background: #444; /* 稍微变亮 */
-        background: linear-gradient(to bottom, #222 0%, #444 100%);
-        transform: translateY(3px);
-        box-shadow: inset 0 0 5px rgba(0,0,0,0.8);
+        position: absolute; top: 0; height: 100%; border-radius: 0 0 4px 4px; box-sizing: border-box; cursor: pointer; transition: background 0.05s, transform 0.05s;
     }
     
-    /* 标记中央C */
-    .key[data-note="C4"]::after {
-        content: "C4"; position: absolute; bottom: 5px; left:0; width:100%; text-align:center; color:#999; font-size:10px;
+    .key.white {
+        width: 26px; /* 稍微调窄 */
+        height: 160px;
+        background: white;
+        border: 1px solid #bbb;
+        z-index: 1;
+    }
+    .key.white.active {
+        background: #bdc3c7;
+        transform: translateY(2px);
+        border-bottom: 5px solid #7f8c8d;
     }
 
-    .piano-controls { display: flex; justify-content: space-between; padding: 5px 20px; color: #b2bec3; font-size: 12px; }
-    .scroll-btn { background: #636e72; border:none; color:white; padding: 2px 10px; border-radius: 4px; cursor: pointer;}
+    .key.black {
+        width: 16px;
+        height: 100px;
+        background: #111;
+        z-index: 2;
+        border: 1px solid #000;
+        border-top: none;
+    }
+    .key.black.active {
+        background: #444;
+        transform: translateY(2px);
+        box-shadow: inset 0 0 5px white;
+    }
+
+    /* 标记中央C */
+    .key[data-note="C4"]::after {
+        content: "C4"; position: absolute; bottom: 5px; width: 100%; text-align: center; color: #ccc; font-size: 10px;
+    }
 </style>
 
 <script>
@@ -193,271 +188,225 @@
         synth: null,
         visualObj: null,
         timer: null,
-        // 光标相关
         cursorEl: null,
+        audioContext: null, // 全局 AudioContext
         
         init: function() {
             this.cursorEl = document.getElementById('cursor');
-            this.renderFullPiano(); // 渲染88键
+            this.renderFullPiano();
             this.fetchData();
+            
+            // 初始化 AudioContext (为了 Oscillator 备用)
+            const AudioCtor = window.AudioContext || window.webkitAudioContext;
+            this.audioContext = new AudioCtor();
 
-            // 初始化合成器，明确要求钢琴音色
+            // 初始化 ABCJS 合成器
             if (ABCJS.synth.supportsAudio()) {
                 this.synth = new ABCJS.synth.CreateSynth();
-                // 预加载一些基础音色，避免播放时卡顿
-                // program: 0 是 Acoustic Grand Piano (大钢琴)
-                // 之前的 beep 声音是因为没有正确等待 SoundFont 加载
-            } else {
-                document.getElementById('status-display').innerText = "❌ 浏览器不支持音频";
+                // 尝试预加载
+                this.initSynth();
             }
         },
 
-        // === 1. 数据加载 (和之前一样) ===
+        // === 1. 初始化声音 (后台加载) ===
+        initSynth: async function() {
+            const status = document.getElementById('status-display');
+            try {
+                await this.synth.init({
+                    audioContext: this.audioContext,
+                    visualObj: this.visualObj,
+                    options: { 
+                        program: 0, // 大钢琴
+                        // 使用本地或更快的 CDN，如果这个慢，可以换回默认
+                        soundFontUrl: "https://paulrosen.github.io/midi-js-soundfonts/MusyngKite/" 
+                    } 
+                });
+                await this.synth.prime();
+                status.innerText = "✅ 钢琴音源就绪";
+                status.style.color = "green";
+            } catch (e) {
+                console.warn("SoundFont load failed, using fallback", e);
+                status.innerText = "⚠️ 使用基础音色";
+            }
+        },
+
+        // === 2. 加载乐谱数据 ===
         fetchData: function() {
+            const sel = document.getElementById('song-select');
             fetch('data/songs.json')
-                .then(res => { if(!res.ok) throw new Error(); return res.json(); })
+                .then(r => r.json())
                 .then(data => {
                     this.songs = data;
-                    const sel = document.getElementById('song-select');
                     sel.innerHTML = '<option value="" disabled selected>请选择乐谱...</option>';
                     data.forEach(s => {
                         const opt = document.createElement('option');
                         opt.value = s.id; opt.innerText = s.title; sel.appendChild(opt);
                     });
-                    document.getElementById('status-display').innerText = "✅ 准备就绪";
+                    document.getElementById('status-display').innerText = "✅ 数据加载完成";
                 })
-                .catch(() => {
-                    document.getElementById('song-select').innerHTML = '<option>⚠️ 加载失败(CORS)</option>';
+                .catch(err => {
+                    sel.innerHTML = '<option>⚠️ 加载失败(CORS)</option>';
+                    alert("请在 VS Code Live Server 或 GitHub Pages 环境运行以读取 JSON。");
                 });
         },
 
-        // === 2. 渲染全尺寸 88 键钢琴 ===
-        renderFullPiano: function() {
-            const pianoEl = document.getElementById('piano-keyboard');
-            let html = '';
-            
-            // 钢琴标准：A0 (MIDI 21) 到 C8 (MIDI 108)
-            const startMidi = 21; 
-            const endMidi = 108;
-            
-            // 用来计算白键的位置 (left: xx px)
-            let whiteKeyIndex = 0;
-            const whiteKeyWidth = 28; // 和 CSS 里的 .key.white 宽度一致
-
-            for (let i = startMidi; i <= endMidi; i++) {
-                const noteName = this.getNoteName(i); // 获取 C, C#, D...
-                const isBlack = noteName.includes('#');
-                
-                if (!isBlack) {
-                    // 白键：位置是根据它是第几个白键算出来的
-                    const leftPos = whiteKeyIndex * whiteKeyWidth;
-                    html += `<div class="key white" data-midi="${i}" data-note="${noteName}" 
-                                  style="left: ${leftPos}px" 
-                                  id="key-${i}"></div>`;
-                    whiteKeyIndex++;
-                } else {
-                    // 黑键：位置是在上一个白键的基础上偏移
-                    // 并不是正中间，而是根据乐理微调 (C#, D#偏左/偏右，这里简化处理，统一偏左2/3)
-                    // 上一个白键的左边距 + (白键宽 * 0.65)
-                    const prevWhiteLeft = (whiteKeyIndex - 1) * whiteKeyWidth;
-                    const blackLeft = prevWhiteLeft + (whiteKeyWidth * 0.65);
-                    
-                    html += `<div class="key black" data-midi="${i}" 
-                                  style="left: ${blackLeft}px" 
-                                  id="key-${i}"></div>`;
-                }
-            }
-            pianoEl.innerHTML = html;
-            
-            // 绑定试听
-            pianoEl.addEventListener('mousedown', e => {
-                const k = e.target;
-                if(k.classList.contains('key')) this.playNote(k.dataset.midi);
-            });
-            
-            // 默认滚到中央C位置 (大约在中间)
-            setTimeout(() => {
-                const scrollContainer = document.getElementById('piano-scroll');
-                scrollContainer.scrollLeft = 600; 
-            }, 100);
-        },
-        
-        getNoteName: function(midi) {
-            const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-            const octave = Math.floor(midi / 12) - 1;
-            return notes[midi % 12] + octave;
-        },
-
-        // === 3. 加载与播放逻辑 (核心升级) ===
+        // === 3. 渲染乐谱 ===
         loadSong: function(id) {
             this.stop();
+            document.getElementById('empty-state').style.display = 'none';
             const song = this.songs.find(s => s.id == id);
-            if (!song) return;
-
-            // A. 渲染乐谱，开启点击监听
+            
+            // 渲染 ABC
             this.visualObj = ABCJS.renderAbc("notation-paper", song.abc, {
                 responsive: "resize",
                 scale: 1.1,
                 add_classes: true,
-                clickListener: (abcElem, tuneNumber, classes, analysis, drag, mouseEvent) => {
-                    // ★★★ 点击乐谱跳转功能 ★★★
-                    // abcElem.midiPitches 可能包含当前点击位置的音符信息
-                    // 最好是用 absolute time 也就是时间戳
-                    // 由于 abcjs Basic Synth 比较难精准 seek，我们这里做简单的重新初始化播放
-                    // 这是一个简化的实现，跳转到对应百分比
-                    
-                    // 更高级的做法需要 SynthController，这里为了不引入太复杂的UI，我们只做提示
-                    console.log("点击了小节:", abcElem.measure);
-                    // 真实跳转需要 midi buffer 支持，下面代码尝试跳转
-                    if(this.synth) {
-                        // 计算大概时间（秒）
-                        // 这是一个复杂话题，目前 abcjs 推荐用 SynthController 拖动条
-                        // 这里我们让用户知道点击被响应了
-                        this.cursorEl.style.display = "block";
-                        // this.synth.seek(0.5); // 需要高级API支持
-                        alert("提示：跳转播放需要配合高级控制器，目前建议使用全部播放。"); 
-                    }
-                }
+                paddingtop: 0,
+                paddingbottom: 0
             })[0];
 
-            this.initAudio(song.abc);
-        },
-
-        initAudio: async function(abcString) {
-            document.getElementById('status-display').innerText = "⏳ 正在加载钢琴音源...";
-            document.getElementById('btn-play').disabled = true;
-
-            try {
-                // ★★★ 核心：program: 0 强制使用钢琴音色 ★★★
-                // abcjs 会去 github 下载 soundfont (大概2MB)
-                await this.synth.init({
-                    audioContext: new (window.AudioContext || window.webkitAudioContext)(),
-                    visualObj: this.visualObj,
-                    options: { 
-                        program: 0, // 0 = Acoustic Grand Piano
-                        soundFontUrl: "https://paulrosen.github.io/midi-js-soundfonts/MusyngKite/" 
-                        // 使用质量更好的音源库
-                    } 
-                });
-                
-                // 预缓冲
-                await this.synth.prime();
-                
-                document.getElementById('status-display').innerText = "✅ 钢琴音源加载完毕";
-                document.getElementById('btn-play').disabled = false;
-
-            } catch (e) {
-                console.error(e);
-                document.getElementById('status-display').innerText = "❌ 音源加载失败";
+            // 重新绑定音频
+            if (this.synth) {
+                this.synth.init({
+                    audioContext: this.audioContext,
+                    visualObj: this.visualObj
+                }).then(() => this.synth.prime());
             }
         },
 
+        // === 4. 播放控制 ===
         play: function() {
-            if (!this.synth) return;
+            if (!this.visualObj) return alert("请先选择乐谱");
             
-            // 创建回调对象，处理动画
-            // TimingCallbacks 是让动画和音乐同步的关键
-            this.timer = new ABCJS.TimingCallbacks(this.visualObj, {
-                // 每走一拍都会触发
-                eventCallback: (event) => {
-                    if (event) {
-                        // 1. 移动光标 (简单实现)
-                        // event.left 是当前音符在 SVG 里的 x 坐标
-                        if (event.left !== null) {
-                            this.cursorEl.style.display = "block";
-                            // +15 是为了修正一点左边距
-                            this.cursorEl.style.left = (event.left + 15) + "px"; 
-                            // 还可以设置 height 匹配
-                            this.cursorEl.style.height = event.height + "px";
-                            this.cursorEl.style.top = event.top + "px";
-                        }
+            // 🔒 必须在用户操作时恢复 AudioContext (解决无声的核心)
+            if (this.audioContext.state === 'suspended') {
+                this.audioContext.resume();
+            }
 
-                        // 2. 钢琴按键动画
-                        if (event.midiPitches) {
-                            event.midiPitches.forEach(p => {
-                                // 传入 duration 以便控制按键时长 (单位：秒)
-                                // event.durationInMeasures * millisecondsPerMeasure... 比较复杂
-                                // 这里我们给一个标准反馈时长，或者基于 event 里的 duration
-                                this.flashKey(p.pitch, p.durationInMeasures * 1000); 
-                            });
+            if (this.synth) {
+                this.timer = new ABCJS.TimingCallbacks(this.visualObj, {
+                    eventCallback: (ev) => {
+                        if (ev) {
+                            // 移动光标
+                            if (ev.left !== null) {
+                                this.cursorEl.style.display = "block";
+                                this.cursorEl.style.left = (ev.left + 15) + "px"; // +padding
+                                this.cursorEl.style.top = ev.top + "px";
+                                this.cursorEl.style.height = ev.height + "px";
+                            }
+                            // 钢琴联动
+                            if (ev.midiPitches) {
+                                ev.midiPitches.forEach(p => this.flashKey(p.pitch, 300));
+                            }
+                        } else {
+                            this.cursorEl.style.display = "none";
                         }
-                    } else {
-                        // 播放结束
-                        this.cursorEl.style.display = "none";
                     }
-                }
-            });
-
-            this.synth.start();
-            this.timer.start();
-            document.getElementById('btn-play').innerText = "⏸ 播放中";
+                });
+                this.synth.start();
+                this.timer.start();
+                document.getElementById('btn-play').innerText = "⏸ 播放中";
+            }
         },
 
         stop: function() {
             if (this.timer) this.timer.stop();
             if (this.synth) this.synth.stop();
-            document.getElementById('btn-play').innerText = "▶ 开始演奏";
-            this.cursorEl.style.display = "none";
+            document.getElementById('btn-play').innerText = "▶ 演奏";
             this.clearKeys();
+            this.cursorEl.style.display = "none";
         },
 
-        // === 4. 视觉优化逻辑 ===
-        
-        // 解决“连击”不显示的问题：强制浏览器重绘 (Reflow)
-        flashKey: function(midi, durationMs) {
-            const key = document.getElementById(`key-${midi}`);
-            if (!key) return;
+        updateTempo: function(val) {
+            document.getElementById('tempo-val').innerText = val + " BPM";
+        },
 
-            // 如果该键已经是按下状态，先移除 class，强制浏览器刷新，再添加
-            // 这样能看到“抬起再按下”的效果
-            if (key.classList.contains('active')) {
-                key.classList.remove('active');
-                void key.offsetWidth; // ★★★ 魔法代码：触发重绘 ★★★
-            }
-
-            key.classList.add('active');
+        // === 5. 钢琴逻辑 (88键 + 声音修复) ===
+        renderFullPiano: function() {
+            const el = document.getElementById('piano-keyboard');
+            let html = '';
+            let whiteIndex = 0;
+            const whiteW = 26; // 和 CSS 一致
             
-            // 自动滚动钢琴到当前按键位置 (可选，看体验)
-            // this.autoScrollPiano(key);
+            // MIDI 21 (A0) -> 108 (C8)
+            for (let i = 21; i <= 108; i++) {
+                const note = this.getNote(i);
+                const isBlack = note.includes('#');
+                
+                if (!isBlack) {
+                    html += `<div class="key white" id="k-${i}" data-midi="${i}" style="left:${whiteIndex * whiteW}px" data-note="${note}"></div>`;
+                    whiteIndex++;
+                } else {
+                    // 黑键偏移
+                    const left = (whiteIndex - 1) * whiteW + (whiteW * 0.65);
+                    html += `<div class="key black" id="k-${i}" data-midi="${i}" style="left:${left}px"></div>`;
+                }
+            }
+            el.innerHTML = html;
+            el.style.width = (whiteIndex * whiteW) + "px"; // 动态设定总宽度
 
-            // 根据时长抬起
-            // 如果 durationMs 太小（比如快速音），至少给 200ms
-            const time = durationMs > 200 ? durationMs : 300;
-            setTimeout(() => {
-                key.classList.remove('active');
-            }, time);
+            // 绑定事件 (解决无声)
+            el.addEventListener('mousedown', (e) => {
+                const k = e.target;
+                if (!k.classList.contains('key')) return;
+                const midi = parseInt(k.dataset.midi);
+                
+                // 1. 视觉反馈
+                this.flashKey(midi, 500);
+                
+                // 2. 听觉反馈 (立即响)
+                this.playNoteImmediate(midi);
+            });
+
+            // 默认居中
+            setTimeout(() => this.scrollToCenter(), 500);
+        },
+
+        scrollToCenter: function() {
+            const scroll = document.getElementById('piano-scroll');
+            // 简单计算 C4 (MIDI 60) 的大致位置
+            scroll.scrollTo({ left: 600, behavior: 'smooth' });
+        },
+
+        getNote: function(midi) {
+            const n = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+            return n[midi % 12] + (Math.floor(midi/12)-1);
+        },
+
+        flashKey: function(midi, time) {
+            const k = document.getElementById(`k-${midi}`);
+            if (!k) return;
+            k.classList.remove('active');
+            void k.offsetWidth; // 触发重绘
+            k.classList.add('active');
+            setTimeout(() => k.classList.remove('active'), time);
         },
 
         clearKeys: function() {
-            document.querySelectorAll('.key').forEach(k => k.classList.remove('active'));
+            document.querySelectorAll('.key.active').forEach(k => k.classList.remove('active'));
         },
 
-        // 手动点击试听 (使用内置 Synth 发个单音，比 oscillator 好听)
-        playNote: function(midi) {
-            // 这里为了响应速度，还是先用视觉反馈
-            this.flashKey(midi, 300);
+        // ★★★ 声音修复核心方法 ★★★
+        // 这是一个简单的“电子音”发生器，不需要等待网络下载
+        // 用来确保你在点击键盘时 100% 有声音
+        playNoteImmediate: function(midi) {
+            if (this.audioContext.state === 'suspended') this.audioContext.resume();
             
-            // 如果想听到声音，可以直接利用 abcjs synth 的 midi 接口
-            // 但那个接口比较深，这里为了简单还是用 Web Audio API 发个简单的声
-            // 或者：如果 synth 已经 init 了，可以用 synth.midiNoteOn(midi, 100, 0); 
-            // 尝试调用 synth 的底层 (需 abcjs 支持)
-            if(this.synth && this.synth.midiBuffer) {
-                // ABCJS Basic 没有直接暴露 noteOn 接口
-                // 所以我们保留原来的 Oscillator 作为备用，或者就这样静音练习
-            }
-        },
-        
-        // 辅助：左右滚动按钮
-        scrollPiano: function(direction) {
-            const el = document.getElementById('piano-scroll');
-            const amount = 300;
-            if(direction === 'left') el.scrollBy({left: -amount, behavior: 'smooth'});
-            else el.scrollBy({left: amount, behavior: 'smooth'});
-        },
-        
-        setTempo: function(val) {
-            document.getElementById('tempo-val').innerText = val + " BPM";
-            // 实时变速需要重启播放，这里仅做UI展示
+            const osc = this.audioContext.createOscillator();
+            const gain = this.audioContext.createGain();
+            
+            // MIDI转频率
+            osc.frequency.value = 440 * Math.pow(2, (midi - 69) / 12);
+            osc.type = 'triangle'; // 三角波音色比较柔和
+            
+            osc.connect(gain);
+            gain.connect(this.audioContext.destination);
+            
+            osc.start();
+            // 声音包络 (淡出)
+            gain.gain.setValueAtTime(0.3, this.audioContext.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.5);
+            osc.stop(this.audioContext.currentTime + 0.5);
         }
     };
 
