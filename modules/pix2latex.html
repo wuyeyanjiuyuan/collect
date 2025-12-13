@@ -1,0 +1,410 @@
+<div id="p2l-app">
+    <div class="p2l-control-bar">
+        <div class="left-controls">
+            <div class="status-indicator">
+                <span class="status-dot" id="status-dot"></span>
+                <span id="engine-status">配置检查...</span>
+            </div>
+            
+            <div class="setting-group">
+                <label for="model-select" style="font-size:11px; color:#666;">模型:</label>
+                <select id="model-select" onchange="PixApp.saveSettings()">
+                    <option value="latex_ocr">标准模型 (Standard)</option>
+                    <option value="latex_ocr_turbo">轻量模型 (Turbo)</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="key-input-group">
+            <label class="proxy-switch" title="无需插件，使用公共代理中转">
+                <input type="checkbox" id="proxy-toggle" onchange="PixApp.saveSettings()">
+                <span>代理模式</span>
+            </label>
+
+            <input type="password" id="api-key-input" placeholder="粘贴 User Token" autocomplete="off" oninput="PixApp.saveSettings()">
+            
+            <div class="tooltip-icon" title="Token 获取方式：
+1. 访问 simpletex.net 并注册
+2. 进入用户中心 -> 开发者中心 (API)
+3. 复制 User Token">?</div>
+        </div>
+    </div>
+
+    <div class="p2l-workspace">
+        <div class="p2l-column input-col">
+            <div class="upload-zone" id="drop-zone">
+                <input type="file" id="file-input" accept="image/*" hidden>
+                
+                <div class="placeholder-content" id="placeholder">
+                    <svg style="width:48px;height:48px;color:#cbd5e0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    <p style="margin-top:10px;">Ctrl+V 粘贴 / 拖拽上传</p>
+                </div>
+
+                <img id="preview-img" class="preview-image" style="display:none;">
+                
+                <div class="loading-overlay" id="loading-overlay">
+                    <div class="spinner"></div>
+                    <p id="loading-text">正在识别...</p>
+                </div>
+            </div>
+
+            <div class="history-strip">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                    <div class="strip-title">历史记录 (缓存)</div>
+                    <div class="clear-btn" onclick="PixApp.clearAllHistory()" title="清空历史">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </div>
+                </div>
+                <div class="history-list" id="history-list"></div>
+            </div>
+        </div>
+
+        <div class="p2l-column output-col">
+            <div style="margin-bottom: 15px; font-weight: bold; color:#2c3e50; display:flex; justify-content:space-between; align-items:center;">
+                <span>识别结果</span>
+                <span id="conf-score" class="conf-badge">Ready</span>
+            </div>
+            
+            <div class="output-row-group">
+                <div class="row-label">Raw LaTeX</div>
+                <div class="output-row">
+                    <input type="text" class="result-input" id="out-raw" readonly placeholder="...">
+                    <button class="copy-btn-icon" onclick="PixApp.copyResult('out-raw')">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="output-row-group">
+                <div class="row-label">Inline Math ($)</div>
+                <div class="output-row">
+                    <input type="text" class="result-input" id="out-inline" readonly placeholder="$...$">
+                    <button class="copy-btn-icon" onclick="PixApp.copyResult('out-inline')">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="output-row-group">
+                <div class="row-label">Display Math ($$)</div>
+                <div class="output-row">
+                    <input type="text" class="result-input" id="out-block" readonly placeholder="$$...$$">
+                    <button class="copy-btn-icon" onclick="PixApp.copyResult('out-block')">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                    </button>
+                </div>
+            </div>
+
+             <div class="output-row-group">
+                <div class="row-label">Equation Environment</div>
+                <div class="output-row">
+                    <input type="text" class="result-input" id="out-equation" readonly placeholder="\begin{equation}...\end{equation}">
+                    <button class="copy-btn-icon" onclick="PixApp.copyResult('out-equation')">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="info-box" id="res-info">
+                <i class="fa fa-info-circle"></i> <b>准备就绪:</b> 粘贴图片开始识别。<br>
+                <span style="font-size:11px; opacity:0.8;">历史记录已启用本地缓存，点击旧图片不消耗Token。</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* === 基础布局 === */
+    #p2l-app {
+        --primary: #2980b9; --bg-gray: #f8f9fa; --border: #dfe6e9; --danger: #e74c3c;
+        font-family: 'Segoe UI', Roboto, sans-serif;
+        display: flex; flex-direction: column;
+        height: 600px; background: #fff; border-radius: 8px; overflow: hidden;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+    }
+    
+    /* 顶部栏 */
+    .p2l-control-bar { padding: 8px 15px; background: #fff; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;}
+    .left-controls { display: flex; gap: 15px; align-items: center; }
+    .status-indicator { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #555; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #ccc; transition:0.3s; }
+    .setting-group { display: flex; align-items: center; gap: 5px; }
+    #model-select { font-size: 12px; padding: 3px 2px; border: 1px solid #ccc; border-radius: 4px; color: #333; cursor: pointer; }
+
+    .key-input-group { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+    .key-input-group input[type="password"] { font-size: 12px; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px; width: 140px; transition: 0.2s; }
+    .key-input-group input[type="password"]:focus { border-color: var(--primary); outline: none; }
+    /* 移除按钮样式，因为按钮被删了，但保留以防万一 */
+    
+    .proxy-switch { display: flex; align-items: center; gap: 4px; font-size: 12px; color: #666; cursor: pointer; user-select: none; border-right: 1px solid #eee; padding-right: 10px; }
+    
+    .tooltip-icon { 
+        width: 18px; height: 18px; background: #bdc3c7; color: #fff; border-radius: 50%; 
+        text-align: center; line-height: 18px; font-size: 11px; font-weight: bold; 
+        cursor: help; position: relative; 
+    }
+    .tooltip-icon:hover { background: var(--primary); }
+
+    /* 工作区 */
+    .p2l-workspace { display: flex; flex: 1; overflow: hidden; }
+    .p2l-column { padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+    .input-col { flex: 1; border-right: 1px solid var(--border); background: #fafafa; min-width: 300px; }
+    
+    .upload-zone { flex: 1; background: #fff; border: 2px dashed #bdc3c7; border-radius: 8px; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: pointer; transition: all 0.3s; flex-direction: column; }
+    .upload-zone:hover, .upload-zone.drag-over { border-color: var(--primary); background: #ecf0f1; }
+    .placeholder-content { text-align: center; color: #95a5a6; pointer-events: none; }
+    .preview-image { max-width: 100%; max-height: 100%; object-fit: contain; padding: 10px; z-index: 2;}
+    .loading-overlay { position: absolute; inset: 0; background: rgba(255,255,255,0.95); display: none; flex-direction: column; align-items: center; justify-content: center; color: var(--primary); font-weight: bold; z-index: 10; }
+    .spinner { width: 30px; height: 30px; border: 3px solid #f3f3f3; border-top: 3px solid var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 15px; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    /* 历史记录 */
+    .history-strip { height: 90px; flex-shrink: 0; display: flex; flex-direction: column; }
+    .strip-title { font-size: 11px; font-weight: 700; color: #95a5a6; text-transform: uppercase; }
+    .clear-btn { cursor: pointer; color: #95a5a6; width: 16px; height: 16px; transition: 0.2s; }
+    .clear-btn:hover { color: var(--danger); }
+    .history-list { display: flex; gap: 8px; overflow-x: auto; padding: 4px 2px; height: 60px;}
+    .history-list::-webkit-scrollbar { height: 4px; } .history-list::-webkit-scrollbar-thumb { background: #ccc; border-radius: 2px; }
+    
+    .history-card { position: relative; width: 50px; height: 50px; flex-shrink: 0; border-radius: 4px; border: 1px solid var(--border); transition: 0.2s; background: #fff; }
+    .history-card:hover { border-color: var(--primary); transform: translateY(-2px); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .history-card img { width: 100%; height: 100%; object-fit: cover; border-radius: 3px; cursor: pointer; }
+    .del-btn { position: absolute; top: -5px; right: -5px; width: 16px; height: 16px; background: var(--danger); color: white; border-radius: 50%; display: none; align-items: center; justify-content: center; cursor: pointer; font-size: 10px; z-index: 5; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+    .history-card:hover .del-btn { display: flex; }
+
+    /* 输出区 */
+    .output-col { flex: 1.3; background: #fff; min-width: 380px; overflow-y: auto; }
+    .output-row-group { margin-bottom: 8px; }
+    .row-label { font-size: 11px; font-weight: 600; color: #7f8c8d; margin-bottom: 3px; }
+    .output-row { display: flex; align-items: center; gap: 6px; }
+    .result-input { flex: 1; padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px; font-family: 'Consolas', monospace; font-size: 13px; color: #2c3e50; background: #f8f9fa; outline: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .result-input:focus { background: #fff; border-color: var(--primary); }
+    .copy-btn-icon { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); background: #fff; border-radius: 4px; cursor: pointer; color: #666; flex-shrink: 0; transition: 0.2s; }
+    .copy-btn-icon:hover { border-color: var(--primary); color: var(--primary); }
+    .copy-btn-icon.copied { color: #2ecc71; border-color: #2ecc71; }
+    .conf-badge { font-size:11px; font-weight:normal; color:#bdc3c7; background:#f8f9fa; padding:2px 6px; border-radius:4px; }
+    .info-box { margin-top: auto; padding: 10px; font-size: 12px; color: #666; background: #eef2f7; border-left: 3px solid #bdc3c7; border-radius: 4px; line-height: 1.4; }
+</style>
+
+<script>
+(function(){
+    const PixApp = {
+        history: [], 
+        MAX_HISTORY: 8, 
+        config: { apiKey: '', model: 'latex_ocr', useProxy: false },
+
+        init: function() {
+            this.loadSettings();
+            this.bindEvents();
+            this.loadHistory();
+            this.updateUI();
+            // 注意：删除了 init 里的 checkBalance 调用
+        },
+
+        loadSettings: function() {
+            const saved = localStorage.getItem('p2l_config');
+            if(saved) { try { this.config = { ...this.config, ...JSON.parse(saved) }; } catch(e) {} }
+            document.getElementById('api-key-input').value = this.config.apiKey;
+            document.getElementById('model-select').value = this.config.model;
+            document.getElementById('proxy-toggle').checked = this.config.useProxy;
+        },
+
+        saveSettings: function() {
+            this.config.apiKey = document.getElementById('api-key-input').value.trim();
+            this.config.model = document.getElementById('model-select').value;
+            this.config.useProxy = document.getElementById('proxy-toggle').checked;
+            localStorage.setItem('p2l_config', JSON.stringify(this.config));
+            this.updateUI();
+        },
+
+        updateUI: function() {
+            const dot = document.getElementById('status-dot');
+            const txt = document.getElementById('engine-status');
+            if(this.config.apiKey) {
+                // 只要有 Key，就显示就绪（不再联网检查，防止报错）
+                const modelName = this.config.model === 'latex_ocr' ? '标准' : 'Turbo';
+                dot.style.background = '#2ecc71'; 
+                txt.innerText = `${modelName} 就绪 (${this.config.useProxy ? '代理' : '直连'})`;
+            } else {
+                dot.style.background = '#e74c3c'; 
+                txt.innerText = "请填 User Token";
+            }
+        },
+
+        // === 原 checkBalance 函数已彻底移除，以消除 404 报错 ===
+
+        bindEvents: function() {
+            const dropZone = document.getElementById('drop-zone');
+            const fileInput = document.getElementById('file-input');
+            dropZone.onclick = () => fileInput.click();
+            fileInput.onchange = (e) => { if(e.target.files.length) this.handleImage(e.target.files[0]); };
+            document.onpaste = (e) => {
+                const items = e.clipboardData.items;
+                for (let i = 0; i < items.length; i++) {
+                    if (items[i].type.indexOf("image") !== -1) {
+                        this.handleImage(items[i].getAsFile()); break;
+                    }
+                }
+            };
+            dropZone.ondragover = (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); };
+            dropZone.ondragleave = (e) => { e.preventDefault(); dropZone.classList.remove('drag-over'); };
+            dropZone.ondrop = (e) => { e.preventDefault(); dropZone.classList.remove('drag-over'); if(e.dataTransfer.files.length) this.handleImage(e.dataTransfer.files[0]); };
+        },
+
+        handleImage: function(blob) {
+            if(!this.config.apiKey) { alert("请先配置 Token"); return; }
+            document.getElementById('loading-overlay').style.display = 'flex';
+            document.getElementById('placeholder').style.display = 'none';
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const base64Data = e.target.result;
+                const img = document.getElementById('preview-img');
+                img.src = base64Data; img.style.display = 'block';
+                this.callSimpleTex(blob, base64Data);
+            };
+            reader.readAsDataURL(blob);
+        },
+
+        callSimpleTex: async function(fileBlob, base64Data) {
+            const formData = new FormData();
+            formData.append('file', fileBlob);
+            
+            const MODEL_TYPE = this.config.model; 
+            
+            // 直接使用您确认的接口：latex_ocr (标准) 或 latex_ocr_turbo (轻量)
+            let API_URL = `https://server.simpletex.cn/api/${MODEL_TYPE}`;
+            if(this.config.useProxy) API_URL = "https://corsproxy.io/?" + encodeURIComponent(API_URL);
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'token': this.config.apiKey },
+                    body: formData
+                });
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const data = await response.json();
+
+                if (data.status === true) {
+                    const latex = data.res.latex;
+                    const conf = data.res.conf || 0.99;
+                    this.fillOutputs(latex, conf);
+                    this.addToHistory(base64Data, { latex: latex, conf: conf });
+                    this.showInfo(`✅ 识别成功`, "success");
+                    // 移除了 checkBalance 调用
+                } else {
+                    throw new Error(data.msg || "API Error");
+                }
+            } catch (error) {
+                console.error(error);
+                let msg = error.message.includes('Failed to fetch') ? "网络连接被拦截或失败" : error.message;
+                this.showInfo(`❌ 失败: ${msg}`, "error");
+            } finally {
+                document.getElementById('loading-overlay').style.display = 'none';
+            }
+        },
+
+        fillOutputs: function(raw, conf) {
+            if(!raw) return;
+            const cleanRaw = raw.trim();
+            document.getElementById('out-raw').value = cleanRaw;
+            document.getElementById('out-inline').value = `$${cleanRaw}$`;
+            document.getElementById('out-block').value = `$$ ${cleanRaw} $$`;
+            document.getElementById('out-equation').value = `\\begin{equation}\n${cleanRaw}\n\\end{equation}`;
+            document.getElementById('conf-score').innerText = `Confidence: ${(conf*100).toFixed(1)}%`;
+        },
+
+        showInfo: function(msg, type) {
+            const box = document.getElementById('res-info');
+            box.innerHTML = msg;
+            box.style.borderLeftColor = type === 'error' ? '#e74c3c' : '#2ecc71';
+            box.style.background = type === 'error' ? '#fdedec' : '#eafaf1';
+            box.style.color = type === 'error' ? '#c0392b' : '#27ae60';
+        },
+
+        addToHistory: function(base64, resultData) {
+            if(this.history.length > 0 && this.history[0].img === base64) return;
+            const newItem = { id: Date.now(), img: base64, result: resultData };
+            this.history.unshift(newItem);
+            if(this.history.length > this.MAX_HISTORY) this.history.pop();
+            this.saveHistoryToLocal();
+            this.renderHistory();
+        },
+
+        loadHistory: function() {
+            const saved = localStorage.getItem('p2l_history_data');
+            if(saved) { try { this.history = JSON.parse(saved); } catch(e){} }
+            this.renderHistory();
+        },
+
+        saveHistoryToLocal: function() {
+            try { localStorage.setItem('p2l_history_data', JSON.stringify(this.history)); } catch (e) {}
+        },
+
+        renderHistory: function() {
+            const list = document.getElementById('history-list'); list.innerHTML = '';
+            this.history.forEach((item, index) => {
+                const card = document.createElement('div');
+                card.className = 'history-card';
+                
+                const img = document.createElement('img');
+                img.src = item.img;
+                img.title = "加载此记录";
+                img.onclick = () => {
+                    document.getElementById('preview-img').src = item.img;
+                    document.getElementById('preview-img').style.display = 'block';
+                    document.getElementById('placeholder').style.display = 'none';
+                    if(item.result) {
+                        this.fillOutputs(item.result.latex, item.result.conf);
+                        this.showInfo(`📋 已加载缓存 (无消耗)`, "success");
+                    }
+                };
+
+                const delBtn = document.createElement('div');
+                delBtn.className = 'del-btn';
+                delBtn.innerHTML = '✕';
+                delBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    this.deleteHistoryItem(index);
+                };
+
+                card.appendChild(img);
+                card.appendChild(delBtn);
+                list.appendChild(card);
+            });
+        },
+
+        deleteHistoryItem: function(index) {
+            if(confirm("删除此记录？")) {
+                this.history.splice(index, 1);
+                this.saveHistoryToLocal();
+                this.renderHistory();
+            }
+        },
+
+        clearAllHistory: function() {
+            if(this.history.length === 0) return;
+            if(confirm("清空所有历史？")) {
+                this.history = [];
+                this.saveHistoryToLocal();
+                this.renderHistory();
+            }
+        },
+
+        copyResult: function(id) {
+            const el = document.getElementById(id);
+            if (navigator.clipboard) { navigator.clipboard.writeText(el.value).then(() => this.feedback(id)); } 
+            else { el.select(); document.execCommand('copy'); this.feedback(id); }
+        },
+        feedback: function(id) {
+            const btn = document.querySelector(`button[onclick="PixApp.copyResult('${id}')"]`);
+            const old = btn.innerHTML;
+            btn.innerHTML = `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`;
+            btn.classList.add('copied');
+            setTimeout(() => { btn.innerHTML = old; btn.classList.remove('copied'); }, 1500);
+        }
+    };
+    window.PixApp = PixApp;
+    PixApp.init();
+})();
+</script>
