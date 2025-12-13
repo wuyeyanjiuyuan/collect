@@ -1,0 +1,20 @@
+[
+    {
+        "id": 1,
+        "title": "小星星 (Twinkle Twinkle Little Star)",
+        "difficulty": "⭐",
+        "abc": "X:1\nT:Twinkle Twinkle Little Star\nM:4/4\nL:1/4\nK:C\n\"C\"C C G G | \"F\"A A \"C\"G2 | \"F\"F F \"E\"E E | \"D\"D D \"C\"C2 |\n\"G\"G G \"F\"F F | \"E\"E E \"D\"D2 | \"G\"G G \"F\"F F | \"E\"E E \"D\"D2 |\n\"C\"C C G G | \"F\"A A \"C\"G2 | \"F\"F F \"E\"E E | \"D\"D D \"C\"C2 |]"
+    },
+    {
+        "id": 2,
+        "title": "欢乐颂 (Ode to Joy)",
+        "difficulty": "⭐⭐",
+        "abc": "X:2\nT:Ode to Joy\nM:4/4\nL:1/4\nK:C\nE E F G | G F E D | C C D E | E3/2D/2 D2 |\nE E F G | G F E D | C C D E | D3/2C/2 C2 |]"
+    },
+    {
+        "id": 3,
+        "title": "两只老虎 (Two Tigers)",
+        "difficulty": "⭐",
+        "abc": "X:3\nT:Two Tigers\nM:4/4\nL:1/4\nK:C\nC D E C | C D E C | E F G2 | E F G2 |\nG/2A/2 G/2F/2 E C | G/2A/2 G/2F/2 E C | C G, C2 | C G, C2 |]"
+    }
+]

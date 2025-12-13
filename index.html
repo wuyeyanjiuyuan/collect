@@ -18,6 +18,8 @@
   <script src="live2d/assets/jquery.min.js"></script>
   <script src="live2d/assets/jquery-ui.min.js"></script>
   <script src="js/3Dmol-min.js"></script>
+  <script src="js/abcjs-basic-min.js"></script>
+  <script src="data/songs.js"></script>
 
   <!-- 禁止转码 -->
   <meta http-equiv="Cache-Control" content="no-transform">
@@ -43,6 +45,7 @@
           <div class="dropdown-menu">
             <a href="?app=material" id="menu-material">Material</a>
             <a href="?app=pix2latex" id="menu-pix2latex">Pix2latex</a>
+            <a href="?app=music" id="menu-music">Music Start！</a>
             <a href="?app=none" id="menu-none">没想好</a>
           </div>
         </div>
@@ -106,6 +109,11 @@
           title: "截图公式转换Latex",
           desc: "能不能干掉Mathpix",
           file: "./modules/pix2latex.html"
+        },
+        'music': {
+          title: "Music Start！",
+          desc: "学音乐多是一件美事",
+          file: "./modules/music.html"
         },
         'none': {
           title: "none",

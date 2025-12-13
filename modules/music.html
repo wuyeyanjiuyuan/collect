@@ -1,0 +1,406 @@
+<script src="https://cdn.jsdelivr.net/npm/abcjs@6.2.2/dist/abcjs-basic-min.js"></script>
+
+<div id="music-app">
+    <div class="music-header">
+        <div class="header-left">
+            <div class="app-icon">🎹</div>
+            <div>
+                <h2>乐器助手</h2>
+                <span class="status-text" id="status-display">等待加载...</span>
+            </div>
+        </div>
+        
+        <div class="control-panel">
+            <select id="song-select" onchange="MusicApp.loadSong(this.value)">
+                <option value="" disabled selected>正在读取乐谱库...</option>
+            </select>
+
+            <div class="divider"></div>
+
+            <button class="btn btn-play" onclick="MusicApp.play()" id="btn-play">▶ 演奏</button>
+            <button class="btn btn-stop" onclick="MusicApp.stop()">⏹ 停止</button>
+
+            <div class="speed-box">
+                <label>速度</label>
+                <input type="range" id="tempo-slider" min="30" max="180" value="90" oninput="MusicApp.updateTempoLabel(this.value)">
+                <span id="tempo-val">90 BPM</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="sheet-music-container">
+        <div id="notation-placeholder" class="placeholder-text">
+            👈 请在左上角选择一首曲子开始学习
+        </div>
+        <div id="notation-paper"></div>
+        <div id="midi-player" style="display:none;"></div>
+    </div>
+
+    <div class="piano-section">
+        <div class="piano-wrapper">
+            <div id="piano-keyboard" class="piano">
+                </div>
+        </div>
+        <p class="piano-hint">提示：点击琴键可试听，播放时琴键会自动亮起</p>
+    </div>
+</div>
+
+<style>
+    /* === 整体容器样式 === */
+    #music-app {
+        --primary: #6c5ce7;
+        --accent: #a29bfe;
+        --bg-color: #f8f9fa;
+        --text-color: #2d3436;
+        font-family: 'Segoe UI', sans-serif;
+        background: var(--bg-color);
+        padding: 20px;
+        border-radius: 12px;
+        min-height: 600px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    /* === 顶部栏 === */
+    .music-header {
+        background: #fff;
+        padding: 15px 20px;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: center;
+        gap: 15px;
+    }
+    .header-left { display: flex; align-items: center; gap: 15px; }
+    .app-icon { font-size: 32px; background: #eee; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+    .music-header h2 { margin: 0; font-size: 18px; color: var(--text-color); }
+    .status-text { font-size: 12px; color: #888; }
+
+    .control-panel { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .divider { width: 1px; height: 30px; background: #eee; margin: 0 10px; }
+    
+    #song-select { padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; outline: none; min-width: 200px; }
+    #song-select:focus { border-color: var(--primary); }
+
+    .btn { border: none; padding: 8px 20px; border-radius: 6px; color: white; cursor: pointer; font-weight: bold; transition: 0.2s; display: flex; align-items: center; gap: 5px; }
+    .btn-play { background: #00b894; }
+    .btn-play:hover { background: #00a884; transform: translateY(-2px); }
+    .btn-play:disabled { background: #ccc; cursor: not-allowed; }
+    .btn-stop { background: #ff7675; }
+    .btn-stop:hover { background: #d63031; }
+
+    .speed-box { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #666; background: #f1f2f6; padding: 5px 10px; border-radius: 20px; }
+    input[type=range] { width: 80px; accent-color: var(--primary); }
+
+    /* === 乐谱区域 === */
+    .sheet-music-container {
+        flex: 1;
+        background: #fff;
+        border-radius: 10px;
+        padding: 20px;
+        min-height: 250px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        overflow-x: auto;
+    }
+    .placeholder-text { color: #b2bec3; font-size: 16px; }
+    /* ABCJS 选中音符颜色 */
+    .abcjs-note_selected { fill: var(--primary); stroke: var(--primary); }
+
+    /* === 钢琴区域 === */
+    .piano-section { text-align: center; }
+    .piano-wrapper {
+        display: inline-block;
+        background: #2d3436;
+        padding: 25px 15px 15px 15px;
+        border-radius: 8px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        position: relative;
+    }
+    /* 钢琴品牌条 */
+    .piano-wrapper::before {
+        content: "Midnight Steinway";
+        position: absolute;
+        top: 8px; left: 0; width: 100%;
+        text-align: center;
+        color: #b2bec3; font-size: 10px; letter-spacing: 2px;
+        font-family: serif;
+    }
+
+    .piano { display: flex; position: relative; }
+    
+    .key {
+        position: relative;
+        cursor: pointer;
+        user-select: none;
+        transition: all 0.1s;
+    }
+
+    /* 白键 */
+    .key.white {
+        width: 36px; height: 160px;
+        background: linear-gradient(to bottom, #fff 0%, #f1f2f6 100%);
+        border-radius: 0 0 4px 4px;
+        margin-right: 2px; /* 键缝隙 */
+        z-index: 1;
+    }
+    .key.white:last-child { margin-right: 0; }
+    .key.white.active {
+        background: linear-gradient(to bottom, #fff 0%, #74b9ff 100%);
+        transform: translateY(2px);
+        box-shadow: inset 0 -5px 10px rgba(0,0,0,0.1);
+    }
+
+    /* 黑键 */
+    .key.black {
+        width: 24px; height: 100px;
+        background: linear-gradient(45deg, #2d3436, #000);
+        border-radius: 0 0 3px 3px;
+        position: absolute;
+        z-index: 2;
+        box-shadow: 2px 2px 4px rgba(0,0,0,0.4);
+        /* 核心：黑键通过负 margin 定位在两个白键中间 */
+        margin-left: -13px; 
+    }
+    .key.black.active {
+        background: linear-gradient(45deg, #0984e3, #74b9ff);
+        box-shadow: inset 0 0 5px rgba(255,255,255,0.5);
+    }
+
+    .key-label {
+        position: absolute; bottom: 8px; left: 0; width: 100%;
+        text-align: center; font-size: 10px; color: #b2bec3; pointer-events: none;
+    }
+
+    .piano-hint { font-size: 12px; color: #999; margin-top: 10px; }
+</style>
+
+<script>
+(function(){
+    // 音高定义
+    const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+
+    const MusicApp = {
+        songs: [],
+        synth: null,
+        visualObj: null,
+        timingCallbacks: null,
+        isPlaying: false,
+
+        init: function() {
+            this.renderPiano();
+            this.fetchData(); // 获取JSON数据
+            
+            // 初始化音频合成器
+            if (ABCJS.synth.supportsAudio()) {
+                this.synth = new ABCJS.synth.CreateSynth();
+            } else {
+                document.getElementById('status-display').innerText = "❌ 浏览器不支持音频";
+            }
+        },
+
+        // 1. 获取数据 (核心)
+        fetchData: function() {
+            const selectEl = document.getElementById('song-select');
+            const statusEl = document.getElementById('status-display');
+            
+            fetch('data/songs.json')
+                .then(res => {
+                    if (!res.ok) throw new Error("File not found");
+                    return res.json();
+                })
+                .then(data => {
+                    this.songs = data;
+                    selectEl.innerHTML = '<option value="" disabled selected>请选择一首曲子...</option>';
+                    data.forEach(song => {
+                        const opt = document.createElement('option');
+                        opt.value = song.id;
+                        opt.innerText = `${song.title} (${song.difficulty})`;
+                        selectEl.appendChild(opt);
+                    });
+                    statusEl.innerText = `✅ 已加载 ${data.length} 首乐谱`;
+                })
+                .catch(err => {
+                    console.error(err);
+                    selectEl.innerHTML = '<option>⚠️ 加载失败 (CORS限制)</option>';
+                    statusEl.innerText = "⚠️ 请使用 VS Code Live Server 打开";
+                    alert("提示：请确保你在本地服务器(localhost)或 GitHub Pages 环境下运行，否则无法读取 JSON 数据文件。");
+                });
+        },
+
+        // 2. 绘制钢琴
+        renderPiano: function() {
+            const pianoEl = document.getElementById('piano-keyboard');
+            let html = '';
+            // 范围：C3 (MIDI 48) 到 C5 (MIDI 72)
+            const startMidi = 48; 
+            const endMidi = 72;
+            
+            for (let i = startMidi; i <= endMidi; i++) {
+                const noteName = NOTES[i % 12];
+                const isBlack = noteName.includes('#');
+                const octave = Math.floor(i / 12) - 1;
+
+                if (!isBlack) {
+                    // 白键
+                    html += `<div class="key white" data-midi="${i}" id="key-${i}"><div class="key-label">${noteName}${octave}</div></div>`;
+                } else {
+                    // 黑键
+                    html += `<div class="key black" data-midi="${i}" id="key-${i}"></div>`;
+                }
+            }
+            pianoEl.innerHTML = html;
+
+            // 绑定鼠标点击事件
+            pianoEl.addEventListener('mousedown', e => this.handlePianoInput(e, true));
+            pianoEl.addEventListener('mouseup', e => this.handlePianoInput(e, false));
+            pianoEl.addEventListener('mouseout', e => this.handlePianoInput(e, false));
+        },
+
+        handlePianoInput: function(e, isDown) {
+            const key = e.target.closest('.key');
+            if(!key) return;
+            const midi = key.dataset.midi;
+            
+            if(isDown) {
+                if(!key.classList.contains('active')) {
+                    key.classList.add('active');
+                    this.playBeep(midi); // 播放声音
+                }
+            } else {
+                key.classList.remove('active');
+            }
+        },
+
+        // 3. 加载选中的乐谱
+        loadSong: function(id) {
+            this.stop(); // 先停止之前的播放
+            document.getElementById('notation-placeholder').style.display = 'none';
+            
+            const song = this.songs.find(s => s.id == id);
+            if (!song) return;
+
+            // 渲染五线谱
+            this.visualObj = ABCJS.renderAbc("notation-paper", song.abc, {
+                responsive: "resize",
+                scale: 1.2,
+                add_classes: true
+            })[0];
+
+            // 准备音频
+            this.initAudio(song.abc);
+            document.getElementById('status-display').innerText = `🎵 当前: ${song.title}`;
+        },
+
+        // 4. 初始化音频逻辑
+        initAudio: async function(abcString) {
+            if (!this.synth) return;
+
+            try {
+                // 初始化合成器 (下载 SoundFont)
+                await this.synth.init({
+                    audioContext: new (window.AudioContext || window.webkitAudioContext)(),
+                    visualObj: this.visualObj
+                });
+                
+                await this.synth.prime(); // 预加载缓冲
+
+                // 设置回调监听器 (联动钢琴)
+                this.timingCallbacks = new ABCJS.TimingCallbacks(this.visualObj, {
+                    eventCallback: (event) => {
+                        // 清除上一个状态
+                        // 注意：这里简单暴力清除所有，也可优化为只清除 ending 的音符
+                        MusicApp.clearAllKeys();
+
+                        if (event && event.midiPitches) {
+                            // 遍历当前时刻的所有音符（可能有和弦）
+                            event.midiPitches.forEach(pitch => {
+                                MusicApp.highlightKey(pitch.pitch);
+                            });
+                        }
+                    }
+                });
+
+            } catch (error) {
+                console.warn("Audio init failed", error);
+            }
+        },
+
+        // 5. 播放控制
+        play: function() {
+            if (!this.synth || !this.visualObj) return;
+            if (this.isPlaying) return;
+
+            // 获取当前速度
+            const bpm = document.getElementById('tempo-slider').value;
+            // abcjs 的 millisecondsPerMeasure 计算稍繁琐，简易版通常在 start 时传入 tempo 并不直接支持
+            // 它是根据乐谱原本的速度（Q:标记）播放的。
+            // 这里为了实现变速，我们需要在 renderAbc 时其实就最好注入速度，
+            // 或者使用 timingCallbacks 的 setProgress 比较复杂。
+            // 为了新手友好，我们这里暂时用默认速度播放，
+            // ⚠️ 进阶：如果要动态改变速度，通常需要重置 TimingCallbacks 的参数。
+            // 简单的做法是：修改 abc 字符串里的 Q: 标记，然后重新 initAudio。
+            
+            this.synth.start();
+            this.timingCallbacks.start();
+            this.isPlaying = true;
+            document.getElementById('btn-play').innerText = "⏸ 播放中";
+            document.getElementById('btn-play').disabled = true;
+        },
+
+        stop: function() {
+            if (this.timingCallbacks) this.timingCallbacks.stop();
+            if (this.synth) this.synth.stop();
+            this.clearAllKeys();
+            this.isPlaying = false;
+            document.getElementById('btn-play').innerText = "▶ 演奏";
+            document.getElementById('btn-play').disabled = false;
+        },
+
+        updateTempoLabel: function(val) {
+            document.getElementById('tempo-val').innerText = val + " BPM";
+            // 实时变速是高级功能，需要更复杂的逻辑，这里仅更新UI显示
+        },
+
+        // 6. 视觉辅助
+        highlightKey: function(midi) {
+            const key = document.getElementById(`key-${midi}`);
+            if (key) key.classList.add('active');
+        },
+
+        clearAllKeys: function() {
+            document.querySelectorAll('.key.active').forEach(k => k.classList.remove('active'));
+        },
+
+        // 7. 简易发音 (用于点击钢琴键时，不需要加载 huge soundfont)
+        playBeep: function(midi) {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContext) return;
+            const ctx = new AudioContext();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            
+            const freq = 440 * Math.pow(2, (midi - 69) / 12);
+            osc.frequency.value = freq;
+            osc.type = 'triangle'; // 三角波听起来比正弦波更有“乐器感”
+            
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            
+            osc.start();
+            gain.gain.setValueAtTime(0.1, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.5);
+            osc.stop(ctx.currentTime + 0.5);
+        }
+    };
+
+    window.MusicApp = MusicApp;
+    MusicApp.init();
+})();
+</script>
