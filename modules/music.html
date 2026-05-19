@@ -164,6 +164,31 @@
 
             // 初始化拖拽监听
             this.initDragLogic();
+            // 初始化采样器（惰性解码）
+            this.sampleCache = {}; // noteName -> { buffer: AudioBuffer|null, loading: Promise|null }
+            this.initSampler();
+        },
+
+        initSampler: function() {
+            // 如果页面中有 MIDI.Soundfont.acoustic_grand_piano，保留引用。
+            // 否则尝试动态加载 data/soundfont/acoustic_grand_piano-mp3.js
+            try {
+                if (window.MIDI && MIDI.Soundfont && MIDI.Soundfont.acoustic_grand_piano) {
+                    this.soundfont = MIDI.Soundfont.acoustic_grand_piano;
+                } else {
+                    this.soundfont = null;
+                    const url = 'data/soundfont/acoustic_grand_piano-mp3.js';
+                    // 如果页面没有引入该脚本，动态插入
+                    if (!document.querySelector(`script[src="${url}"]`)) {
+                        const s = document.createElement('script'); s.src = url; s.async = true;
+                        s.onload = () => { try { if (window.MIDI && MIDI.Soundfont) this.soundfont = MIDI.Soundfont.acoustic_grand_piano; } catch(e){} };
+                        s.onerror = () => { console.warn('加载 soundfont 失败:', url); };
+                        document.head.appendChild(s);
+                    } else {
+                        try { if (window.MIDI && MIDI.Soundfont) this.soundfont = MIDI.Soundfont.acoustic_grand_piano; } catch(e){}
+                    }
+                }
+            } catch (e) { this.soundfont = null; }
         },
         
 
@@ -187,18 +212,23 @@
             document.getElementById('empty-state').style.display = 'none';
             const song = this.songs.find(s => s.id == id);
             
-            // 渲染乐谱，开启 clickListener
-            // 这对实现“点击跳转”至关重要
-            this.visualObj = ABCJS.renderAbc("notation-paper", song.abc, {
-                responsive: "resize",
-                scale: 1.1,
-                add_classes: true,
-                paddingtop: 0, paddingbottom: 0, paddingleft: 0, paddingright: 0,
-                // 监听乐谱点击
-                clickListener: (abcElem, tuneNumber, classes, analysis, drag, mouseEvent) => {
-                     this.handleScoreClick(abcElem);
-                }
-            })[0];
+            // 渲染乐谱，开启 clickListener（捕获异常以显示错误）
+            try {
+                this.visualObj = ABCJS.renderAbc("notation-paper", song.abc, {
+                    responsive: "resize",
+                    scale: 1.1,
+                    add_classes: true,
+                    paddingtop: 0, paddingbottom: 0, paddingleft: 0, paddingright: 0,
+                    clickListener: (abcElem, tuneNumber, classes, analysis, drag, mouseEvent) => {
+                        this.handleScoreClick(abcElem);
+                    }
+                })[0];
+                document.getElementById('status-display').innerText = '乐谱已渲染';
+            } catch (e) {
+                console.error('ABCJS render error', e);
+                document.getElementById('status-display').innerText = '渲染乐谱失败：' + (e && e.message ? e.message : e);
+                return;
+            }
 
             // 缓存所有音符位置，用于拖拽吸附
             this.cacheNotePositions();
@@ -500,7 +530,14 @@
 
             gainNode.connect(ctx.destination);
 
-            // ADSR
+            // 如果有采样可用，优先使用采样音色（更真实）
+            const noteName = this.midiToNoteName(midi);
+            if (this.soundfont && this.soundfont[noteName]) {
+                this.playSample(noteName, duration, velocity);
+                return;
+            }
+
+            // ADSR（合成器后备）
             const attack = Math.max(0.005, Math.min(0.06, duration * 0.03));
             const decay = Math.min(0.12, duration * 0.08);
             const sustainLevel = 0.5;
@@ -519,6 +556,96 @@
             osc.stop(now + duration + 0.05);
             overtone.stop(now + duration + 0.05);
         }
+
+        ,
+
+        // 将 midi 数字转换为 soundfont 的 note 名称，如 60 -> C4
+        midiToNoteName: function(midi) {
+            const names = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+            const octave = Math.floor(midi/12)-1;
+            const name = names[midi % 12];
+            return name + octave;
+        },
+
+        // 加载并解码指定 note 的样本（惰性）
+        loadSample: function(noteName) {
+            if (!this.soundfont || !this.soundfont[noteName]) return Promise.reject(new Error('no-sf'));
+            if (this.sampleCache[noteName] && this.sampleCache[noteName].buffer) return Promise.resolve(this.sampleCache[noteName].buffer);
+            if (this.sampleCache[noteName] && this.sampleCache[noteName].loading) return this.sampleCache[noteName].loading;
+
+            const dataUri = this.soundfont[noteName];
+            const p = fetch(dataUri).then(r => r.arrayBuffer()).then(ab => this.audioContext.decodeAudioData(ab)).then(buf => {
+                this.sampleCache[noteName] = { buffer: buf, loading: null };
+                return buf;
+            }).catch(err => { this.sampleCache[noteName] = { buffer: null, loading: null }; throw err; });
+
+            this.sampleCache[noteName] = { buffer: null, loading: p };
+            return p;
+        },
+
+        // 播放指定 note 的采样
+        playSample: function(noteName, duration, velocity) {
+            duration = typeof duration === 'number' ? duration : 1.2;
+            velocity = typeof velocity === 'number' ? velocity : 1.0;
+            const ctx = this.audioContext;
+            this.loadSample(noteName).then(buffer => {
+                const now = ctx.currentTime;
+                const src = ctx.createBufferSource(); src.buffer = buffer;
+                const g = ctx.createGain();
+                g.gain.setValueAtTime(0.0001, now);
+                g.gain.linearRampToValueAtTime(velocity, now + 0.01);
+                const release = Math.min(1.2, duration * 0.8);
+                g.gain.setValueAtTime(velocity, now + duration - release);
+                g.gain.exponentialRampToValueAtTime(0.0001, now + duration + 0.02);
+
+                src.connect(g);
+                // 轻延迟效果
+                const delay = ctx.createDelay(0.5); delay.delayTime.value = 0.08;
+                const fb = ctx.createGain(); fb.gain.value = 0.16;
+                g.connect(delay); delay.connect(fb); fb.connect(delay);
+                delay.connect(ctx.destination);
+                g.connect(ctx.destination);
+
+                src.start(now);
+                src.stop(now + buffer.duration + 0.05);
+            }).catch(() => {
+                // 解码失败则回退到合成器
+                // find midi from noteName
+                const midi = (function(){
+                    const note = noteName.slice(0, -1);
+                    const octave = parseInt(noteName.slice(-1));
+                    const map = {'C':0,'C#':1,'D':2,'D#':3,'E':4,'F':5,'F#':6,'G':7,'G#':8,'A':9,'A#':10,'B':11};
+                    return (octave+1)*12 + (map[note] || 0);
+                })();
+                // 简单回退：调用合成器分支
+                const tdur = duration || buffer && buffer.duration || 1.2;
+                this.playPianoVoiceSynth(midi, tdur, velocity);
+            });
+        },
+
+        // 用于回退的合成器播放（与旧 playPianoVoice 中的合成器逻辑分离，避免递归）
+        playPianoVoiceSynth: function(midi, duration, velocity) {
+            duration = typeof duration === 'number' ? duration : 1.2;
+            velocity = typeof velocity === 'number' ? velocity : 1.0;
+            if (this.audioContext.state === 'suspended') this.audioContext.resume();
+            const t = this.audioContext.currentTime;
+            const freq = 440 * Math.pow(2, (midi - 69) / 12);
+            const osc = this.audioContext.createOscillator(); osc.type = 'triangle'; osc.frequency.value = freq;
+            const overtone = this.audioContext.createOscillator(); overtone.type = 'sine'; overtone.frequency.value = freq * 2;
+            const filter = this.audioContext.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = Math.max(2000, freq * 6);
+            const gainNode = this.audioContext.createGain();
+            osc.connect(filter); overtone.connect(filter); filter.connect(gainNode); gainNode.connect(this.audioContext.destination);
+            const attack = Math.max(0.005, Math.min(0.06, duration * 0.03));
+            const decay = Math.min(0.12, duration * 0.08);
+            const sustainLevel = 0.5; const release = Math.min(1.2, duration * 0.8);
+            gainNode.gain.setValueAtTime(0.0001, t);
+            gainNode.gain.linearRampToValueAtTime(velocity * 0.8, t + attack);
+            gainNode.gain.linearRampToValueAtTime(velocity * sustainLevel, t + attack + decay);
+            osc.start(t); overtone.start(t);
+            gainNode.gain.setValueAtTime(velocity * sustainLevel, t + duration - release);
+            gainNode.gain.exponentialRampToValueAtTime(0.0001, t + duration + 0.02);
+            osc.stop(t + duration + 0.05); overtone.stop(t + duration + 0.05);
+        },
     };
 
     window.MusicApp = MusicApp;
