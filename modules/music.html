@@ -29,12 +29,11 @@
 
     <div class="m-sheet-wrapper" id="sheet-wrapper">
         <div class="m-notation-scroll" id="scroll-container">
-            <div id="notation-paper"></div>
-            
-            <div id="cursor" class="m-cursor">
-                <div class="m-cursor-head"></div> </div>
-            
-            <div id="click-layer" class="m-click-layer"></div>
+            <div class="m-score-stage" id="score-stage">
+                <div id="notation-paper"></div>
+                <div id="cursor" class="m-cursor"><div class="m-cursor-head"></div></div>
+                <div id="click-layer" class="m-click-layer"></div>
+            </div>
         </div>
 
         <div id="empty-state" class="m-empty-state">
@@ -85,43 +84,38 @@
     }
 
     .m-notation-scroll {
-        position: relative; 
-        overflow-x: auto; 
+        position: relative;
+        overflow-x: auto;
         padding: 20px;
         min-height: 250px;
-        /* 确保内容居中，除非内容太宽 */
-        display: flex; justify-content: center;
     }
+    .m-score-stage { position: relative; width: max-content; margin: 0 auto; }
     #notation-paper svg { overflow: visible; }
 
     /* ✨ 魔法红线 */
     .m-cursor {
         position: absolute;
         top: 0; left: 0;
-        width: 2px;
-        height: 100%; /* 贯穿整个乐谱 */
-        background: #e74c3c;
-        z-index: 100;
+        width: 26px; /* 半透明播放带宽度 */
+        height: 36px; /* 会在运行时更新为行高 */
+        background: linear-gradient(90deg, rgba(231,76,60,0.06), rgba(231,76,60,0.12));
+        border-radius: 4px;
+        z-index: 200;
         display: none;
-        pointer-events: auto; /* 允许鼠标交互 */
-        cursor: ew-resize; /* 鼠标变拖动样式 */
-        /* 关键：使用 transition 实现平滑移动，节奏感 */
-        transition: left 0.1s linear; 
+        pointer-events: auto;
+        cursor: ew-resize;
+        transition: left 0.04s linear, top 0.08s linear, height 0.12s linear;
+        box-shadow: 0 6px 14px rgba(0,0,0,0.06);
+        overflow: visible;
     }
-    /* 拖拽手柄（顶部的倒三角） */
-    .m-cursor-head {
-        position: absolute; top: -10px; left: -6px;
-        width: 0; height: 0;
-        border-left: 7px solid transparent;
-        border-right: 7px solid transparent;
-        border-top: 10px solid #e74c3c;
-    }
-    .m-cursor:hover { box-shadow: 0 0 8px rgba(231, 76, 60, 0.8); width: 3px; }
+    .m-cursor::before { content: ''; position: absolute; left: 50%; transform: translateX(-50%); top: 0; bottom: 0; width: 2px; background: rgba(231,76,60,0.95); border-radius:2px; }
+    .m-cursor-head { position: absolute; top: -8px; left: 50%; transform: translateX(-50%); width: 10px; height: 10px; background: rgba(231,76,60,0.95); border-radius: 50%; box-shadow: 0 2px 6px rgba(0,0,0,0.18); }
+    .m-cursor:hover { box-shadow: 0 8px 18px rgba(231,76,60,0.12); }
 
     .m-click-layer {
         position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-        z-index: 50; cursor: text;
-        display: none; /* 播放时才显示或一直显示 */
+        z-index: 180; cursor: pointer;
+        display: block; /* 保持可点击以支持试听 */
     }
 
     .m-empty-state { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #bdc3c7; }
@@ -165,37 +159,13 @@
             const AudioCtor = window.AudioContext || window.webkitAudioContext;
             this.audioContext = new AudioCtor();
 
-            if (ABCJS.synth.supportsAudio()) {
-                this.synth = new ABCJS.synth.CreateSynth();
-                this.initSynth();
-            }
+            // 使用本地 WebAudio 音色实现，自行管理合成器，不再依赖 ABCJS.CreateSynth
+            this.synth = null;
 
             // 初始化拖拽监听
             this.initDragLogic();
         },
-
-        // === 1. 声音初始化 (修复无声问题) ===
-        initSynth: async function() {
-            const status = document.getElementById('status-display');
-            status.innerText = "⏳ 加载音源...";
-            try {
-                await this.synth.init({
-                    audioContext: this.audioContext,
-                    visualObj: this.visualObj,
-                    options: { 
-                        program: 0, 
-                        // 确保文件夹路径正确
-                        soundFontUrl: "./data/soundfont/" 
-                    } 
-                });
-                await this.synth.prime();
-                status.innerText = "✅ 钢琴就绪";
-                status.style.color = "#27ae60"; 
-            } catch (e) {
-                console.warn(e);
-                status.innerText = "⚠️ 基础音色";
-            }
-        },
+        
 
         fetchData: function() {
             const sel = document.getElementById('song-select');
@@ -233,18 +203,7 @@
             // 缓存所有音符位置，用于拖拽吸附
             this.cacheNotePositions();
 
-            // 重置 Synth
-            if (this.synth) {
-                this.synth.init({
-                    audioContext: this.audioContext,
-                    visualObj: this.visualObj,
-                    options: { 
-                        program: 0, 
-                        soundFontUrl: "./data/soundfont/",
-                        warp: 100 * this.currentSpeed 
-                    }
-                }).then(() => this.synth.prime());
-            }
+            // 不再使用 ABCJS 的 synth，播放由模块内 WebAudio 接管
         },
 
         // === 2. 拖拽与跳转逻辑 (核心新功能) ===
@@ -266,7 +225,7 @@
                 
                 // 播放点击的那个音
                 if(abcElem.midiPitches) {
-                    abcElem.midiPitches.forEach(p => this.playNotePro(p.pitch));
+                    abcElem.midiPitches.forEach(p => this.playPianoVoice(p.pitch));
                 }
                 
                 // ⚠️ 真实情况：ABCJS Basic版不支持 seek()
@@ -335,6 +294,39 @@
             this.noteElements.sort((a, b) => a.x - b.x);
         },
 
+        // 将 ABCJS 事件坐标转换为舞台（score-stage）坐标并返回可用度量
+        getScoreStageMetrics: function() {
+            const stage = document.getElementById('score-stage');
+            const notation = document.getElementById('notation-paper');
+            const container = document.getElementById('scroll-container');
+            const stageRect = stage.getBoundingClientRect();
+            const notationRect = notation.getBoundingClientRect();
+            const containerRect = container.getBoundingClientRect();
+            return { stage, notation, container, stageRect, notationRect, containerRect };
+        },
+
+        // 根据 TimingCallbacks 提供的 ev（或 beat-like 对象）定位播放带
+        setPlayheadFromTimingPosition: function(ev) {
+            if (!ev || (ev.left == null && ev.top == null)) return;
+            const m = this.getScoreStageMetrics();
+            // 事件中心 x
+            const evLeft = (typeof ev.left === 'number') ? ev.left : 0;
+            const evWidth = (typeof ev.width === 'number') ? ev.width : (ev.w || 0);
+            const worldX = m.notationRect.left + evLeft + (evWidth / 2);
+            const stageX = worldX - m.stageRect.left;
+
+            const evTop = (typeof ev.top === 'number') ? ev.top : 0;
+            const evHeight = (typeof ev.height === 'number') ? ev.height : (ev.h || 36);
+            const worldY = m.notationRect.top + evTop;
+            const stageY = worldY - m.stageRect.top;
+
+            // 更新播放带位置与高度
+            this.cursorEl.style.display = 'block';
+            this.cursorEl.style.left = Math.round(stageX) + 'px';
+            this.cursorEl.style.top = Math.round(stageY) + 'px';
+            this.cursorEl.style.height = Math.max(24, Math.round(evHeight)) + 'px';
+        },
+
         snapToNearestNote: function() {
             // 获取当前红线位置
             const cursorX = parseFloat(this.cursorEl.style.left || '0');
@@ -381,70 +373,46 @@
             if (!this.visualObj) return alert("请先选择乐谱");
             if (this.audioContext.state === 'suspended') this.audioContext.resume();
 
-            if (this.synth) {
-                this.isPlaying = true;
-                document.getElementById('btn-play').innerText = "⏸ 暂停";
-                
-                // 重新初始化以应用速度
-                this.synth.init({
-                    audioContext: this.audioContext,
-                    visualObj: this.visualObj,
-                    options: { 
-                        program: 0, 
-                        soundFontUrl: "./data/soundfont/",
-                        warp: 100 * this.currentSpeed 
+            // 使用本模块的 TimingCallbacks + WebAudio 播放器实现播放与同步
+            this.isPlaying = true;
+            document.getElementById('btn-play').innerText = "⏸ 暂停";
+
+            this.timer = new ABCJS.TimingCallbacks(this.visualObj, {
+                beatCallback: (beat) => {
+                    // 有些版本会通过 beat 提供 left/top，支持平滑插值
+                    if (beat && beat.left != null) {
+                        this.setPlayheadFromTimingPosition(beat);
                     }
-                }).then(() => {
-                    this.synth.prime();
-                    
-                    this.timer = new ABCJS.TimingCallbacks(this.visualObj, {
-                        eventCallback: (ev) => {
-                            if (ev) {
-                                // ★★★ 核心：红线跟随（改进计算，考虑滚动与容器偏移）★★★
-                                if (ev.left !== null && !isNaN(ev.left)) {
-                                    try {
-                                        const container = document.getElementById('scroll-container');
-                                        const notation = document.getElementById('notation-paper');
-                                        const containerRect = container.getBoundingClientRect();
-                                        const notationRect = notation.getBoundingClientRect();
+                },
+                eventCallback: (ev) => {
+                    if (ev) {
+                        this.setPlayheadFromTimingPosition(ev);
 
-                                        // ev.left 是相对于 ABCJS SVG 的像素位置（相对 SVG 左侧）
-                                        // 我们需要把它转换为相对滚动容器的左坐标，并加上当前滚动值
-                                        const left = ev.left + (notationRect.left - containerRect.left) + container.scrollLeft;
-
-                                        this.cursorEl.style.display = "block";
-                                        this.cursorEl.style.left = left + "px";
-                                    } catch (e) {
-                                        // 兜底：恢复旧逻辑
-                                        this.cursorEl.style.display = "block";
-                                        this.cursorEl.style.left = (ev.left + 15) + "px";
-                                    }
-                                }
-
-                                // 钢琴联动：高优先级发声回退（当 synth 无法发音时，也能听到音符）
-                                if (ev.midiPitches) {
-                                    ev.midiPitches.forEach(p => {
-                                        // 高亮琴键
-                                        this.flashKey(p.pitch, Math.max(80, 300 / this.currentSpeed));
-                                        // 播放一次短音以作为回退（时长随速度缩放）
-                                        this.playNotePro(p.pitch, Math.max(0.08, 0.35 / this.currentSpeed));
-                                    });
-                                }
-                            } else {
-                                this.stop();
-                            }
+                        if (ev.midiPitches) {
+                            ev.midiPitches.forEach(p => {
+                                this.flashKey(p.pitch, Math.max(80, 300 / this.currentSpeed));
+                                const dur = (ev.duration && typeof ev.duration === 'number') ? (ev.duration / 1000) / this.currentSpeed : Math.max(0.12, 0.35 / this.currentSpeed);
+                                this.playPianoVoice(p.pitch, dur, 0.9);
+                            });
                         }
-                    });
-                    
-                    this.synth.start(); 
-                    this.timer.start();
-                });
-            }
+                    } else {
+                        this.stop();
+                    }
+                },
+                lineEndCallback: () => {
+                    // 当行结束或到达标志时，平滑滚动以将光带保持在视口中间
+                    const container = document.getElementById('scroll-container');
+                    const center = container.clientWidth / 2;
+                    const target = Math.max(0, this.cursorEl.offsetLeft - center);
+                    container.scrollTo({ left: target, behavior: 'smooth' });
+                }
+            });
+
+            this.timer.start();
         },
 
         stop: function() {
-            if (this.timer) this.timer.stop();
-            if (this.synth) this.synth.stop();
+            if (this.timer) { try { this.timer.stop(); } catch(e){} this.timer = null; }
             this.isPlaying = false;
             document.getElementById('btn-play').innerText = "▶ 播放";
             // 停止时不隐藏光标，方便用户看位置，也不归零
@@ -482,7 +450,7 @@
                 if (!k.classList.contains('m-key')) return;
                 const midi = parseInt(k.dataset.midi);
                 this.flashKey(midi, 500);
-                this.playNotePro(midi); 
+                this.playPianoVoice(midi); 
             });
             setTimeout(() => this.scrollToCenter(), 500);
         },
@@ -497,30 +465,59 @@
         },
         clearKeys: function() { document.querySelectorAll('.m-key.active').forEach(k => k.classList.remove('active')); },
 
-        // 高保真钢琴模拟 (用于手动点击)
-        playNotePro: function(midi, duration) {
-            // duration 单位秒，默认 1.2s
+        // 自制钢琴音色：ADSR 包络 + 简易混响/延迟
+        playPianoVoice: function(midi, duration, velocity) {
             duration = typeof duration === 'number' ? duration : 1.2;
+            velocity = typeof velocity === 'number' ? velocity : 1.0;
             if (this.audioContext.state === 'suspended') this.audioContext.resume();
-            const t = this.audioContext.currentTime;
+            const ctx = this.audioContext;
+            const now = ctx.currentTime;
             const freq = 440 * Math.pow(2, (midi - 69) / 12);
-            
-            const osc = this.audioContext.createOscillator(); osc.type = 'triangle'; osc.frequency.value = freq;
-            const overtone = this.audioContext.createOscillator(); overtone.type = 'sine'; overtone.frequency.value = freq * 2;
-            const filter = this.audioContext.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = freq * 3;
-            const mGain = this.audioContext.createGain(); const oGain = this.audioContext.createGain();
 
-            osc.connect(filter); filter.connect(mGain); mGain.connect(this.audioContext.destination);
-            overtone.connect(oGain); oGain.connect(this.audioContext.destination);
+            // 主音与泛音
+            const osc = ctx.createOscillator(); osc.type = 'triangle'; osc.frequency.value = freq;
+            const overtone = ctx.createOscillator(); overtone.type = 'sine'; overtone.frequency.value = freq * 2.0;
 
-            const attack = Math.min(0.03, duration * 0.02);
-            const overtoneAttack = Math.min(0.02, duration * 0.01);
-            const release = Math.max(0.05, duration * 0.6);
+            // 椎体滤波与输出增益
+            const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = Math.max(2000, freq * 6);
+            const gainNode = ctx.createGain();
 
-            osc.start(t); overtone.start(t);
-            mGain.gain.setValueAtTime(0, t); mGain.gain.linearRampToValueAtTime(0.5, t + attack); mGain.gain.exponentialRampToValueAtTime(0.001, t + release);
-            oGain.gain.setValueAtTime(0, t); oGain.gain.linearRampToValueAtTime(0.1, t + overtoneAttack); oGain.gain.exponentialRampToValueAtTime(0.0005, t + (release * 0.6));
-            osc.stop(t + duration); overtone.stop(t + duration);
+            // 简易混响/延迟（轻量）
+            const delay = ctx.createDelay(0.5); delay.delayTime.value = 0.08;
+            const feedback = ctx.createGain(); feedback.gain.value = 0.18;
+
+            // 连接链路
+            osc.connect(filter); overtone.connect(filter);
+            filter.connect(gainNode);
+
+            // 并行送入延迟（混合干/湿）
+            const delayGain = ctx.createGain(); delayGain.gain.value = 0.4;
+            gainNode.connect(delay);
+            delay.connect(feedback);
+            feedback.connect(delay);
+            delay.connect(delayGain);
+            delayGain.connect(ctx.destination);
+
+            gainNode.connect(ctx.destination);
+
+            // ADSR
+            const attack = Math.max(0.005, Math.min(0.06, duration * 0.03));
+            const decay = Math.min(0.12, duration * 0.08);
+            const sustainLevel = 0.5;
+            const release = Math.min(1.2, duration * 0.8);
+
+            gainNode.gain.setValueAtTime(0.0001, now);
+            gainNode.gain.linearRampToValueAtTime(velocity * 0.8, now + attack);
+            gainNode.gain.linearRampToValueAtTime(velocity * sustainLevel, now + attack + decay);
+
+            osc.start(now); overtone.start(now);
+
+            // 释放曲线
+            gainNode.gain.setValueAtTime(velocity * sustainLevel, now + duration - release);
+            gainNode.gain.exponentialRampToValueAtTime(0.0001, now + duration + 0.02);
+
+            osc.stop(now + duration + 0.05);
+            overtone.stop(now + duration + 0.05);
         }
     };
 
