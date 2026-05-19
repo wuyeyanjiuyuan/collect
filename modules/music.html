@@ -316,17 +316,19 @@
             const notes = document.querySelectorAll('.abcjs-note');
             this.noteElements = [];
             
-            // 获取容器的偏移，以便计算相对坐标
-            const containerRect = document.getElementById('scroll-container').getBoundingClientRect();
+            // 获取容器与 notation 的偏移，以便计算相对坐标
+            const container = document.getElementById('scroll-container');
+            const containerRect = container.getBoundingClientRect();
+            const notationRect = document.getElementById('notation-paper').getBoundingClientRect();
 
             notes.forEach(note => {
                 const rect = note.getBoundingClientRect();
-                // 存储相对 X 坐标
+                // 计算相对滚动容器的 x 坐标（与 cursor 计算保持一致）
+                const x = rect.left - containerRect.left - (notationRect.left - containerRect.left) + notationRect.left - notationRect.left + container.scrollLeft;
+                // 上面的复杂计算最终等价于 rect.left - notationRect.left + container.scrollLeft
                 this.noteElements.push({
-                    x: rect.left - containerRect.left + document.getElementById('scroll-container').scrollLeft,
+                    x: rect.left - notationRect.left + container.scrollLeft,
                     el: note,
-                    // 尝试从 element data 中获取 midi 信息（如果有的话）
-                    // abcjs 渲染时通常不绑定 data 到 dom，这比较难
                 });
             });
             // 按 x 排序
@@ -335,7 +337,7 @@
 
         snapToNearestNote: function() {
             // 获取当前红线位置
-            const cursorX = parseFloat(this.cursorEl.style.left);
+            const cursorX = parseFloat(this.cursorEl.style.left || '0');
             
             // 寻找最近的音符
             let closest = null;
@@ -398,17 +400,35 @@
                     this.timer = new ABCJS.TimingCallbacks(this.visualObj, {
                         eventCallback: (ev) => {
                             if (ev) {
-                                // ★★★ 核心：红线跟随 ★★★
-                                if (ev.left !== null && ev.left > 0) {
-                                    this.cursorEl.style.display = "block";
-                                    // 修正偏移：abcjs 返回的是音符中心或左侧，我们微调
-                                    // 加上 SVG 内部可能的 padding 偏移
-                                    this.cursorEl.style.left = (ev.left + 15) + "px"; 
+                                // ★★★ 核心：红线跟随（改进计算，考虑滚动与容器偏移）★★★
+                                if (ev.left !== null && !isNaN(ev.left)) {
+                                    try {
+                                        const container = document.getElementById('scroll-container');
+                                        const notation = document.getElementById('notation-paper');
+                                        const containerRect = container.getBoundingClientRect();
+                                        const notationRect = notation.getBoundingClientRect();
+
+                                        // ev.left 是相对于 ABCJS SVG 的像素位置（相对 SVG 左侧）
+                                        // 我们需要把它转换为相对滚动容器的左坐标，并加上当前滚动值
+                                        const left = ev.left + (notationRect.left - containerRect.left) + container.scrollLeft;
+
+                                        this.cursorEl.style.display = "block";
+                                        this.cursorEl.style.left = left + "px";
+                                    } catch (e) {
+                                        // 兜底：恢复旧逻辑
+                                        this.cursorEl.style.display = "block";
+                                        this.cursorEl.style.left = (ev.left + 15) + "px";
+                                    }
                                 }
 
-                                // 钢琴联动
+                                // 钢琴联动：高优先级发声回退（当 synth 无法发音时，也能听到音符）
                                 if (ev.midiPitches) {
-                                    ev.midiPitches.forEach(p => this.flashKey(p.pitch, 300 / this.currentSpeed));
+                                    ev.midiPitches.forEach(p => {
+                                        // 高亮琴键
+                                        this.flashKey(p.pitch, Math.max(80, 300 / this.currentSpeed));
+                                        // 播放一次短音以作为回退（时长随速度缩放）
+                                        this.playNotePro(p.pitch, Math.max(0.08, 0.35 / this.currentSpeed));
+                                    });
                                 }
                             } else {
                                 this.stop();
@@ -478,7 +498,9 @@
         clearKeys: function() { document.querySelectorAll('.m-key.active').forEach(k => k.classList.remove('active')); },
 
         // 高保真钢琴模拟 (用于手动点击)
-        playNotePro: function(midi) {
+        playNotePro: function(midi, duration) {
+            // duration 单位秒，默认 1.2s
+            duration = typeof duration === 'number' ? duration : 1.2;
             if (this.audioContext.state === 'suspended') this.audioContext.resume();
             const t = this.audioContext.currentTime;
             const freq = 440 * Math.pow(2, (midi - 69) / 12);
@@ -491,10 +513,14 @@
             osc.connect(filter); filter.connect(mGain); mGain.connect(this.audioContext.destination);
             overtone.connect(oGain); oGain.connect(this.audioContext.destination);
 
+            const attack = Math.min(0.03, duration * 0.02);
+            const overtoneAttack = Math.min(0.02, duration * 0.01);
+            const release = Math.max(0.05, duration * 0.6);
+
             osc.start(t); overtone.start(t);
-            mGain.gain.setValueAtTime(0, t); mGain.gain.linearRampToValueAtTime(0.5, t + 0.015); mGain.gain.exponentialRampToValueAtTime(0.01, t + 1.2);
-            oGain.gain.setValueAtTime(0, t); oGain.gain.linearRampToValueAtTime(0.1, t + 0.01); oGain.gain.exponentialRampToValueAtTime(0.001, t + 0.6);
-            osc.stop(t + 1.2); overtone.stop(t + 1.2);
+            mGain.gain.setValueAtTime(0, t); mGain.gain.linearRampToValueAtTime(0.5, t + attack); mGain.gain.exponentialRampToValueAtTime(0.001, t + release);
+            oGain.gain.setValueAtTime(0, t); oGain.gain.linearRampToValueAtTime(0.1, t + overtoneAttack); oGain.gain.exponentialRampToValueAtTime(0.0005, t + (release * 0.6));
+            osc.stop(t + duration); overtone.stop(t + duration);
         }
     };
 
